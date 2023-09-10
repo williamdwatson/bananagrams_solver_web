@@ -3,7 +3,7 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { ContextMenu } from "primereact/contextmenu";
 import { MenuItem } from "primereact/menuitem";
 import { Toast } from "primereact/toast";
-const html2canvas = require("html2canvas");
+import html2canvas from "html2canvas";
 import SolutionTime from "./solution_time";
 import { result_t } from "./types";
 import { writeText } from "./utilities";
