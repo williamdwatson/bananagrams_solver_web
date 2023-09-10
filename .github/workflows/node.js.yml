@@ -28,7 +28,7 @@ jobs:
     - name: Remove unwanted files and change directory layout
       run: |
           mkdir todelete
-          mv * todelete
+          mv * todelete/
           mv todelete/dist .
           rm -rf todelete
           mv dist/* .
