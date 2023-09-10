@@ -89,7 +89,7 @@ export default function LetterInput(props: LetterInputProps){
                         new_map.set(c, parseInt(val));
                         setLetterNums(new_map);
                     }
-                }).catch(error => {});
+                }).catch(() => {props.toast.current?.show({severity: "warn", summary: "Could not paste", detail: "Ensure that access to the clipboard is granted in order to paste."})});
             }}
         ];
         individual_cms.push(<ContextMenu model={individual_items} ref={individual_cm} key={"cm-"+c}/>);
@@ -237,7 +237,7 @@ export default function LetterInput(props: LetterInputProps){
                     }
                 }
             }
-        }).catch(error => {});
+        }).catch(() => {props.toast.current?.show({severity: "warn", summary: "Could not paste", detail: "Ensure that access to the clipboard is granted in order to paste."})});
     }
 
     /**
@@ -290,7 +290,7 @@ export default function LetterInput(props: LetterInputProps){
                     setTypedIn(s);
                 }
             }
-        }).catch(error => {});
+        }).catch(() => {props.toast.current?.show({severity: "warn", summary: "Could not paste", detail: "Ensure that access to the clipboard is granted in order to paste."})});
     }
 
     /**
@@ -301,7 +301,7 @@ export default function LetterInput(props: LetterInputProps){
             if (val != null && [...val].every(char => DIGITS.includes(char))) {
                 setRandomNum(val);
             }
-        }).catch(error => {});
+        }).catch(() => {props.toast.current?.show({severity: "warn", summary: "Could not paste", detail: "Ensure that access to the clipboard is granted in order to paste."})});
     }
 
     /**

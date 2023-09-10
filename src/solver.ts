@@ -65,10 +65,6 @@ export type solution_t = {
 }
 
 /**
- * The maximum length of any word in the dictionary
- */
-const MAX_WORD_LENGTH = 15;
-/**
  * Value of an empty cell on the board
  */
 const EMPTY_VALUE = 30;
@@ -185,30 +181,11 @@ function convert_array_to_word(arr: Uint8Array) {
 }
 
 /**
- * Converts a `board` to a `String`
- * @param board Board to display
- * @param min_col Minimum occupied column index
- * @param max_col Maximum occupied column index
- * @param min_row Minimum occupied row index
- * @param max_row Maximum occupied row index
- * @returns `board` in string form (with all numbers converted to letters)
+ * Gets which indices overlap between `previous_play_sequence` and `new_play_sequence`
+ * @param previous_play_sequence The play sequence the last time the board was played
+ * @param new_play_sequence The new play sequence whose overlap is being compared with `previous_play_sequence`
+ * @returns Set of the indices in the board where each overlapping letter between the two sequences was played; may be empty
  */
-function _board_to_string(board: Board, min_col: number, max_col: number, min_row: number, max_row: number) {
-    const board_string: string[] = [];
-    for (let row=min_row; row<max_row+1; row++) {
-        for (let col=min_col; col<max_col+1; col++) {
-            if (board.get_val(row, col) === EMPTY_VALUE) {
-                board_string.push(" ");
-            }
-            else {
-                board_string.push(String.fromCharCode(board.get_val(row, col)+65));
-            }
-        }
-        board_string.push("\n");
-    }
-    return board_string.join("").trimEnd();
-}
-
 function get_previous_idxs(previous_play_sequence?: PlaySequence, new_play_sequence?: PlaySequence) {
     if (previous_play_sequence == null || new_play_sequence == null) {
         return new Set<number>();

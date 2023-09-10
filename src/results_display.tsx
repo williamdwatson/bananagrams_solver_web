@@ -3,7 +3,7 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { ContextMenu } from "primereact/contextmenu";
 import { MenuItem } from "primereact/menuitem";
 import { Toast } from "primereact/toast";
-import html2canvas from "html2canvas";
+const html2canvas = require("html2canvas");
 import SolutionTime from "./solution_time";
 import { result_t } from "./types";
 import { writeText } from "./utilities";
@@ -118,11 +118,11 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
     const saveImage = () => {
         const table = document.getElementById("results-table");
         if (table != null) {
-            html2canvas(table).then(canvas => {
+            html2canvas(table).then((canvas: HTMLCanvasElement) => {
                 const img = canvas.toDataURL("image/png");
                 downloadURI(img, "Bananagrams solution.png");
             })
-            .catch(error => props.toast.current?.show({ severity: "error", summary: "Failed to save image", detail: "The image failed to save: " + error}));
+            .catch((error: any) => props.toast.current?.show({ severity: "error", summary: "Failed to save image", detail: "The image failed to save: " + error}));
         }
         else {
             props.toast.current?.show({ severity: "error", summary: "Failed to save image", detail: "The image failed to save because the results object could not be located"});
