@@ -1,3 +1,5 @@
+import { GameState } from "./solver";
+
 /**
  * Type of the return after a solution is found
  */
@@ -9,7 +11,11 @@ export type result_t = {
     /**
      * The time the function took to run
      */
-    elapsed: number
+    elapsed: number,
+    /**
+     * The game state
+     */
+    state: GameState
 };
 
 /**

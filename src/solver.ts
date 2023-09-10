@@ -1,11 +1,11 @@
 import { PlaySequence } from "./types";
 import { getRandomInt } from "./utilities";
 
-interface GameState {
+export interface GameState {
     /**
      * The previous board
      */
-    board: Board,
+    board: Uint8Array,
     /**
      * The minimum played column in `board`
      */
@@ -85,6 +85,11 @@ const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  */
 const REGULAR_TILES = [13, 3, 3, 6, 18, 3, 4, 3, 12, 2, 2, 5, 3, 8, 11, 3, 2, 9, 6, 9, 6, 3, 3, 2, 3, 2];
 
+/**
+ * Hashes a vector of numbers
+ * @param v Array to hash
+ * @returns The hash of `v`
+ */
 function vec_hasher(v: Uint8Array|number[]) {
     let seed = v.length;
     v.forEach(num => {
@@ -96,6 +101,23 @@ function vec_hasher(v: Uint8Array|number[]) {
     return seed;
 }
 
+/**
+ * Checks whether two arrays are equal
+ * @param arr1 First array to check
+ * @param arr2 Seconds array to check
+ * @returns Whether the two arrays are equal at all elements
+ */
+function array_equal(arr1: Uint8Array, arr2: Uint8Array) {
+    if (arr1.length !== arr2.length) {
+        return false;
+    }
+    for (let i=0; i<arr1.length; i++) {
+        if (arr1[i] !== arr2[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 
 /**
  * A thin wrapper around the board
@@ -189,28 +211,28 @@ function _board_to_string(board: Board, min_col: number, max_col: number, min_ro
 
 function get_previous_idxs(previous_play_sequence?: PlaySequence, new_play_sequence?: PlaySequence) {
     if (previous_play_sequence == null || new_play_sequence == null) {
-        return new Set<[number, number]>();
+        return new Set<number>();
     }
     else {
-        const previous_idxs = new Set<[number, number]>;
+        const previous_idxs: Array<[number, number]> = [];
         for (let i=0; i<Math.min(previous_play_sequence.length, new_play_sequence.length); i++) {
-            if (previous_play_sequence[i] == new_play_sequence[i]) {
+            if (array_equal(previous_play_sequence[i][0], new_play_sequence[i][0]) && previous_play_sequence[i][1][0] === new_play_sequence[i][1][0] && previous_play_sequence[i][1][1] === new_play_sequence[i][1][1] && previous_play_sequence[i][1][2] === new_play_sequence[i][1][2]) {
                 const word_len = previous_play_sequence[i][0].length;
                 const start_row = previous_play_sequence[i][1][0];
                 const start_col = previous_play_sequence[i][1][1];
                 if (previous_play_sequence[i][1][2] === "horizontal") {
                     for (let j=0; j<word_len; j++) {
-                        previous_idxs.add([start_row, start_col+j]);
+                        previous_idxs.push([start_row, start_col+j]);
                     }
                 }
                 else {
                     for (let j=0; j<word_len; j++) {
-                        previous_idxs.add([start_row+j, start_col]);
+                        previous_idxs.push([start_row+j, start_col]);
                     }
                 }
             }
         }
-        return previous_idxs;
+        return new Set(previous_idxs.map(vec_hasher));
     }
 }
 
@@ -223,7 +245,7 @@ function get_previous_idxs(previous_play_sequence?: PlaySequence, new_play_seque
  * @param max_row Maximum occupied row index
  * @returns `board` in vector form (with all numbers converted to letters)
  */
-function board_to_vec(board: Board, min_col: number, max_col: number, min_row: number, max_row: number, previous_idxs: Set<[number, number]>) {
+function board_to_vec(board: Board, min_col: number, max_col: number, min_row: number, max_row: number, previous_idxs: Set<number>) {
     const board_vec: string[][] = [];
     for (let row=min_row; row<max_row+1; row++) {
         const row_vec: string[] = [];
@@ -233,7 +255,7 @@ function board_to_vec(board: Board, min_col: number, max_col: number, min_row: n
             }
             else {
                 const c = String.fromCharCode(board.get_val(row, col) + 65);
-                if (!previous_idxs.has([row, col])) {
+                if (!previous_idxs.has(vec_hasher([row, col]))) {
                     row_vec.push(c);
                 }
                 else {
@@ -808,6 +830,99 @@ function play_further(board: Board, min_col: number, max_col: number, min_row: n
 }
 
 /**
+ * Tries to play a single letter on the board
+ * @param board 
+ * @param min_col The `Board` on which to try to play the `letter`
+ * @param max_col Minimum occupied column index in `board`
+ * @param min_row Maximum occupied column index in `board`
+ * @param max_row Minimum occupied row index in `board`
+ * @param letter Maximum occupied row index in `board`
+ * @param valid_words_set Set of all valid hashed words
+ * @returns Either `null` if no solution was found, or `(row, col, new_min_col, new_max_col, new_min_row, new_max_row)` on success
+ */
+function play_one_letter(board: Board, min_col: number, max_col: number, min_row: number, max_row: number, letter: number, valid_words_set: Set<number>): [number, number, number, number, number, number]|null {
+    // Loop through all possible locations and check if the letter works there
+    for (let row=min_row-1; row<max_row+2; row++) {
+        for (let col=min_col-1; col<max_col+2; col++) {
+            if (row < BOARD_SIZE && col < BOARD_SIZE && board.get_val(row, col) == EMPTY_VALUE) {   // row/col don't need to be checked if they're greater than 0 since they'd underflow
+                if ((col > 0 && board.get_val(row, col-1) != EMPTY_VALUE) || (col < BOARD_SIZE-1 && board.get_val(row, col+1) != EMPTY_VALUE) || (row > 0 && board.get_val(row-1, col) != EMPTY_VALUE) || (row < BOARD_SIZE-1 && board.get_val(row+1, col) != EMPTY_VALUE)) {
+                    board.set_val(row, col, letter);
+                    const new_min_col = Math.min(min_col, col);
+                    const new_max_col = Math.max(max_col, col);
+                    const new_min_row = Math.min(min_row, row);
+                    const new_max_row = Math.max(max_row, row);
+                    // Could also use `is_board_valid_vertical`
+                    if (is_board_valid_horizontal(board, new_min_col, new_max_col, new_min_row, new_max_row, row, col, col, valid_words_set)) {
+                        // If it's valid, return the (potentially) new bounds, along with the location the letter was played
+                        return [row, col, new_min_col, new_max_col, new_min_row, new_max_row];
+                    }
+                    else {
+                        // If the board wasn't ok, reset this spot
+                        board.set_val(row, col, EMPTY_VALUE);
+                    }
+                }
+            }
+        }
+    }
+    // Return `null` if we don't find a solution
+    return null;
+}
+
+/// Attempts to play off an existing board
+/// # Arguments
+/// * `previous_play_sequence` - Sequence of previous played moves
+/// * `valid_words_vec` - Vector of valid words for the given hand of letters
+/// * `valid_words_set` - HashSet of valid words (HashSet of `valid_words_vec` for faster membership checking)
+/// * `letters` - Array of the number of each letter in the hand
+/// # Returns
+/// `Option` with:
+/// * `Board` - updated board
+/// * `PlaySequence` - updated play sequence
+/// * `usize` - Minimum occupied column index in `board`
+/// * `usize` - Maximum occupied column index in `board`
+/// * `usize` - Minimum occupied row index in `board`
+/// * `usize` - Maximum occupied row index in `board`
+/// 
+/// *or `None` if no valid play can be made on the existing board*
+function play_existing(previous_play_sequence: PlaySequence, valid_words_vec: Array<Uint8Array>, valid_words_set: Set<number>, letters: Uint8Array): [Board, PlaySequence, number, number, number, number]|null {
+    const board = new Board();
+    const row = previous_play_sequence[0][1][0];
+    const col_start = previous_play_sequence[0][1][1];
+    const word = previous_play_sequence[0][0];
+    const use_letters = Uint8Array.from(letters);
+    const word_letters = new Set<number>();
+    for (let i=0; i<word.length; i++) {
+        board.set_val(row, col_start+i, word[i]);
+        use_letters[word[i]] -= 1;
+        word_letters.add(word[i]);
+    }
+    const min_col = col_start;
+    const min_row = row;
+    const max_col = col_start + (word.length-1);
+    const max_row = row;
+    const play_sequence: PlaySequence = [];
+    play_sequence.push([word, [row, col_start, "horizontal"]]);
+    if (use_letters.every(count => count == 0)) {
+        return [board, play_sequence, min_col, max_col, min_row, max_row];
+    }
+    else {
+        const new_valid_words_vec = valid_words_vec.filter(word => check_filter_after_play(use_letters, word, word_letters));
+        const res = play_further(board, min_col, max_col, min_row, max_row, new_valid_words_vec, valid_words_set, use_letters, 0, play_sequence, previous_play_sequence);
+        if (res == null) {
+            return null;
+        }
+        else {
+            if (res[0]) {
+                return [board, play_sequence, res[1], res[2], res[3], res[4]];
+            }
+            else {
+                return null;
+            }
+        }
+    }
+}
+
+/**
  * Async function to get the playable words for a given hand of letters
  * @param available_letters Mapping string letters to numeric quanity of each letter
  * @param state Current state of the app
@@ -928,135 +1043,202 @@ export async function get_random_letters(what: "infinite set"|"standard Bananagr
  * @param available_letters Mapping of string letters to numeric quantity of each letter
  * @param state Current state of the app
  */
-export async function play_bananagrams(available_letters: Map<string, number>, state: AppState) {
-    return new Promise<solution_t>((resolve, reject) => {
-        const start = new Date();
-        // Check if we have all the letters from the frontend
-        const letters = new Uint8Array(26);
-        for (const c of UPPERCASE) {
-            const num = available_letters.get(c);
-            if (num != null) {
-                if (num < 0) {
-                    reject("Number of letter " + c + " is " + num + ", but must be greater than or equal to 0!");
-                    return;
-                }
-                letters[c.charCodeAt(0) - 65] = num;
+function play_bananagrams(available_letters: Map<string, number>, state: AppState) {
+    const start = new Date();
+    // Check if we have all the letters from the frontend
+    const letters = new Uint8Array(26);
+    for (const c of UPPERCASE) {
+        const num = available_letters.get(c);
+        if (num != null) {
+            if (num < 0) {
+                return "Number of letter " + c + " is " + num + ", but must be greater than or equal to 0!";
             }
-            else {
-                reject("Missing letter: " + c);
-                return;
+            letters[c.charCodeAt(0) - 65] = num;
+        }
+        else {
+            return "Missing letter: " + c;
+        }
+    }
+    if (state.last_game != null) {
+        let comparison: comparison_t = "Same";
+        let seen_greater = EMPTY_VALUE;
+        for (let i=0; i<26; i++) {
+            if (letters[i] < state.last_game.letters[i]) {
+                // Any less means we re-do the board, so we can break here
+                comparison = "SomeLess";
+                break;
+            }
+            else if (letters[i] > state.last_game.letters[i] && (seen_greater != EMPTY_VALUE || letters[i] - state.last_game.letters[i] != 1)) {
+                comparison = "GreaterByMoreThanOne";
+            }
+            else if (letters[i] > state.last_game.letters[i]) {
+                comparison = "GreaterByOne";
+                seen_greater = i;
             }
         }
-        if (state.last_game != null) {
-            let comparison: comparison_t = "Same";
-            let seen_greater = EMPTY_VALUE;
-            for (let i=0; i<26; i++) {
-                if (letters[i] < state.last_game.letters[i]) {
-                    // Any less means we re-do the board, so we can break here
-                    comparison = "SomeLess";
-                    break;
-                }
-                else if (letters[i] > state.last_game.letters[i] && (seen_greater != EMPTY_VALUE || letters[i] - state.last_game.letters[i] != 1)) {
-                    comparison = "GreaterByMoreThanOne";
-                }
-                else if (letters[i] > state.last_game.letters[i]) {
-                    comparison = "GreaterByOne";
-                    seen_greater = i;
-                }
-            }
-            if (comparison === "Same") {
-                resolve({
-                    board: board_to_vec(state.last_game.board, state.last_game.min_col, state.last_game.max_col, state.last_game.min_row, state.last_game.max_row, new Set()),
-                    elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
-                    state: {
-                        board: state.last_game.board,
-                        min_col: state.last_game.min_col,
-                        max_col: state.last_game.max_col,
-                        min_row: state.last_game.min_row,
-                        max_row: state.last_game.max_row,
-                        letters: state.last_game.letters
-                    }
-                });
-                return;
-            }
-            else if (comparison === "GreaterByOne") {
-
-            }
-            else if (comparison === "GreaterByMoreThanOne") {
-
-            }
-            else {
-                // We just want to continue to the code that starts from scratch
-            }
-        }
-        // Play from scratch
-        let valid_words_vec: Uint8Array[] = state.all_words_short.filter(word => is_makeable(word, letters));
-        if (valid_words_vec.length == 0) {
-            reject("No valid words can be formed from the current letters - dump and try again!");
-            return;
-        }
-        // Loop through each word and play it on a new board
-        for (const word of valid_words_vec) {
+        if (comparison === "Same") {
             const board = new Board();
-            const col_start = Math.round(BOARD_SIZE/2 - word.length/2);
-            const row = Math.round(BOARD_SIZE/2);
-            const use_letters = Uint8Array.from(letters);
-            for (let i=0; i<word.length; i++) {
-                board.set_val(row, col_start+i, word[i]);
-                use_letters[word[i]] -= 1;
+            board.arr = state.last_game.board;
+            return {
+                board: board_to_vec(board, state.last_game.min_col, state.last_game.max_col, state.last_game.min_row, state.last_game.max_row, new Set()),
+                elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                state: {
+                    board: state.last_game.board,
+                    min_col: state.last_game.min_col,
+                    max_col: state.last_game.max_col,
+                    min_row: state.last_game.min_row,
+                    max_row: state.last_game.max_row,
+                    letters: state.last_game.letters
+                }
+            };
+        }
+        else if (comparison === "GreaterByOne") {
+            const valid_words_vec = state.all_words_short.filter(word => is_makeable(word, letters));
+            const valid_words_set = new Set(valid_words_vec.map(vec_hasher));
+            const board = new Board();
+            board.arr = state.last_game.board;
+            const res = play_one_letter(board, state.last_game.min_col, state.last_game.max_col, state.last_game.min_row, state.last_game.max_row, seen_greater, valid_words_set);
+            if (res == null) {
+                // If we failed when playing one letter, try playing off the existing board
+                const attempt = play_existing(state.last_game.play_sequence!, valid_words_vec, valid_words_set, letters);
+                if (attempt == null) {
+                    // If we failed, continue with the code that starts from scratch
+                }
+                else {
+                    const previous_idxs = get_previous_idxs(state.last_game.play_sequence, attempt[1]);
+                    return {
+                        board: board_to_vec(attempt[0], attempt[2], attempt[3], attempt[4], attempt[5], previous_idxs),
+                        elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                        state: {
+                            board: attempt[0].arr,
+                            min_col: attempt[2],
+                            max_col: attempt[3],
+                            min_row: attempt[4],
+                            max_row: attempt[5],
+                            letters: letters,
+                            play_sequence: attempt[1]
+                        }
+                    };
+                }
             }
-            const min_col = col_start;
-            const min_row = row;
-            const max_col = col_start + (word.length-1);
-            const max_row = row;
-            const play_sequence: PlaySequence = [];
-            play_sequence.push([word, [row, col_start, "horizontal"]]);
-            if (use_letters.every(count => count == 0)) {
-                const previous_idxs = get_previous_idxs(state.last_game?.play_sequence, play_sequence);
-                resolve({
-                    board: board_to_vec(board, min_col, max_col, min_row, max_row, previous_idxs),
+            else {
+                const play_sequence: PlaySequence = [...state.last_game.play_sequence!];
+                const arr = new Uint8Array(1);
+                arr[0] = seen_greater;
+                play_sequence.push([arr, [res[0], res[1], "horizontal"]]);
+                const previous_idxs = get_previous_idxs(state.last_game.play_sequence, play_sequence);
+                return {
+                    board: board_to_vec(board, res[2], res[3], res[4], res[5], previous_idxs),
                     elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
                     state: {
-                        board: board,
-                        min_col: min_col,
-                        max_col: max_col,
-                        min_row: min_row,
-                        max_row: max_row,
+                        board: board.arr,
+                        min_col: res[2],
+                        max_col: res[3],
+                        min_row: res[4],
+                        max_row: res[5],
                         letters: letters,
                         play_sequence: play_sequence
                     }
-                });
-                return;
-            }
-            else {
-                // Reduce the set of remaining words to check to those that can be played with the letters not in the first word (plus only one of the tiles played in the first word)
-                const word_letters = new Set(letters);
-                const new_valid_words_vec = valid_words_vec.filter(word => check_filter_after_play(use_letters, word, word_letters));
-                const valid_words_set = new Set(valid_words_vec.map(vec_hasher));
-                // Begin the recursive processing
-                const result = play_further(board, min_col, max_col, min_row, max_row, new_valid_words_vec, valid_words_set, use_letters, 0, play_sequence, []);
-                if (result == null || !result[0]) {
-                    reject("No valid words can be formed from the current letters - dump and try again!");
-                    return;
-                }
-                else {
-                    const previous_idxs = get_previous_idxs(state.last_game?.play_sequence, play_sequence);
-                    resolve({
-                        board: board_to_vec(board, result[1], result[2], result[3], result[4], previous_idxs),
-                        elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
-                        state: {
-                            board: board,
-                            min_col: result[1],
-                            max_col: result[2],
-                            min_row: result[3],
-                            max_row: result[4],
-                            letters: letters,
-                            play_sequence: play_sequence
-                        }
-                    });
-                    return;
-                }
+                };
             }
         }
-    })
+        else if (comparison === "GreaterByMoreThanOne") {
+            // If a letter has increased by more than one, or multiple have increased by one or more, then try playing off the existing board
+            const valid_words_vec = state.all_words_short.filter(word => is_makeable(word, letters));
+            const valid_words_set = new Set(valid_words_vec.map(vec_hasher));
+            const attempt = play_existing(state.last_game.play_sequence!, valid_words_vec, valid_words_set, letters);
+            if (attempt == null) {
+                // If we failed, continue with the code that starts from scratch
+            }
+            else {
+                const previous_idxs = get_previous_idxs(state.last_game.play_sequence, attempt[1]);
+                return {
+                    board: board_to_vec(attempt[0], attempt[2], attempt[3], attempt[4], attempt[5], previous_idxs),
+                    elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                    state: {
+                        board: attempt[0].arr,
+                        min_col: attempt[2],
+                        max_col: attempt[3],
+                        min_row: attempt[4],
+                        max_row: attempt[5],
+                        letters: letters,
+                        play_sequence: attempt[1]
+                    }
+                };
+            }
+        }
+        else {
+            // We just want to continue to the code that starts from scratch
+        }
+    }
+    // Play from scratch
+    let valid_words_vec: Uint8Array[] = state.all_words_short.filter(word => is_makeable(word, letters));
+    if (valid_words_vec.length == 0) {
+        return "No valid words can be formed from the current letters - dump and try again!";
+    }
+    // Loop through each word and play it on a new board
+    for (const word of valid_words_vec) {
+        const board = new Board();
+        const col_start = Math.round(BOARD_SIZE/2 - word.length/2);
+        const row = Math.round(BOARD_SIZE/2);
+        const use_letters = Uint8Array.from(letters);
+        for (let i=0; i<word.length; i++) {
+            board.set_val(row, col_start+i, word[i]);
+            use_letters[word[i]] -= 1;
+        }
+        const min_col = col_start;
+        const min_row = row;
+        const max_col = col_start + (word.length-1);
+        const max_row = row;
+        const play_sequence: PlaySequence = [];
+        play_sequence.push([word, [row, col_start, "horizontal"]]);
+        if (use_letters.every(count => count == 0)) {
+            const previous_idxs = get_previous_idxs(state.last_game?.play_sequence, play_sequence);
+            return {
+                board: board_to_vec(board, min_col, max_col, min_row, max_row, previous_idxs),
+                elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                state: {
+                    board: board.arr,
+                    min_col: min_col,
+                    max_col: max_col,
+                    min_row: min_row,
+                    max_row: max_row,
+                    letters: letters,
+                    play_sequence: play_sequence
+                }
+            };
+        }
+        else {
+            // Reduce the set of remaining words to check to those that can be played with the letters not in the first word (plus only one of the tiles played in the first word)
+            const word_letters = new Set(letters);
+            const new_valid_words_vec = valid_words_vec.filter(word => check_filter_after_play(use_letters, word, word_letters));
+            const valid_words_set = new Set(valid_words_vec.map(vec_hasher));
+            // Begin the recursive processing
+            const result = play_further(board, min_col, max_col, min_row, max_row, new_valid_words_vec, valid_words_set, use_letters, 0, play_sequence, []);
+            if (result == null || !result[0]) {
+                return "No valid words can be formed from the current letters - dump and try again!";
+            }
+            else {
+                const previous_idxs = get_previous_idxs(state.last_game?.play_sequence, play_sequence);
+                return {
+                    board: board_to_vec(board, result[1], result[2], result[3], result[4], previous_idxs),
+                    elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                    state: {
+                        board: board.arr,
+                        min_col: result[1],
+                        max_col: result[2],
+                        min_row: result[3],
+                        max_row: result[4],
+                        letters: letters,
+                        play_sequence: play_sequence
+                    }
+                };
+            }
+        }
+    }
 }
+
+self.addEventListener("message", e => {
+    const result = play_bananagrams(e.data.letters, e.data.gameState);
+    self.postMessage(result);
+}, false)

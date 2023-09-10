@@ -4,12 +4,11 @@ import "primereact/resources/primereact.min.css";
 import 'primeicons/primeicons.css';
 import { Splitter, SplitterPanel } from "primereact/splitter";
 import { Toast } from "primereact/toast";
-import axios from "axios";
 import "./App.css";
 import LetterInput from "./letter_input";
 import ResultsDisplay from "./results_display";
 import PlayableWords from "./playable_words";
-import { AppState, convert_word_to_array, play_bananagrams } from "./solver";
+import { AppState, convert_word_to_array } from "./solver";
 import { result_t } from "./types";
 
 export default function App() {
@@ -39,10 +38,10 @@ export default function App() {
                     all_words_short: short_text.split("\n").filter(word => word.length > 1).map(word => convert_word_to_array(word.toUpperCase().trim()))
                 });
             }).catch(error => {
-
+                toast.current?.show({severity: "error", summary: "Error getting dictionary", detail: "There was an error getting the dictionary: " + error});
             });
         }).catch(error => {
-
+            toast.current?.show({severity: "error", summary: "Error getting dictionary", detail: "There was an error getting the dictionary: " + error});
         });
     }, []);
 
@@ -53,15 +52,25 @@ export default function App() {
     const startRunning = (letters: Map<string, number>) => {
         setRunning(true);
         if (gameState != null) {
-            play_bananagrams(letters, gameState)
-            .then(res => {
-                const results = res as result_t;
-                setResults(results);
-            })
-            .catch(error => {
-                toast.current?.show({severity: "error", summary: "Uh oh!", detail: "" + error});
-            })
-            .finally(() => setRunning(false));
+            const worker = new Worker(new URL("solver", import.meta.url), {type: "module"});
+            worker.addEventListener("message", e => {
+                if (typeof e.data === "string") {
+                    toast.current?.show({severity: "error", summary: "Uh oh!", detail: "" + e.data});
+                    setRunning(false);
+                }
+                else {
+                    const results = e.data as result_t;
+                    const new_state: AppState = {
+                        all_words_short: gameState.all_words_short,
+                        all_words_long: gameState.all_words_long,
+                        last_game: results.state
+                    }
+                    setGameState(new_state);
+                    setResults(results);
+                    setRunning(false);
+                }
+            });
+            worker.postMessage({letters: letters, gameState: gameState});
         }
     }
 
