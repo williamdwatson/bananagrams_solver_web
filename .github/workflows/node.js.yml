@@ -25,6 +25,14 @@ jobs:
         cache: 'npm'
     - run: npm install
     - run: npm run build
+    - name: Remove unwanted files and change directory layout
+      run: |
+          mkdir todelete
+          mv * todelete
+          mv todelete/dist .
+          rm -rf todelete
+          mv dist/* .
+          rm -rf dist
     - name: Push to gh-pages
       run: |
           git config --global user.name 'William Watson'
