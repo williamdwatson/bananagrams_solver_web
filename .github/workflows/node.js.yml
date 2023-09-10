@@ -37,9 +37,11 @@ jobs:
       run: |
           git config --global user.name 'William Watson'
           git config --global user.email 'williamdwatson@users.noreply.github.com'
+          git stash
           git fetch --unshallow origin gh-pages
           git checkout gh-pages
           git pull
+          git stash pop
           git add -A
           git commit -m "Automated build"
           git push
