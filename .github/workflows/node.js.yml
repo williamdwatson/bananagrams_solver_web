@@ -29,6 +29,7 @@ jobs:
       run: |
           git config --global user.name 'William Watson'
           git config --global user.email 'williamdwatson@users.noreply.github.com'
+          git fetch --unshallow origin gh-pages
           git checkout gh-pages
           git pull
           git add -A
