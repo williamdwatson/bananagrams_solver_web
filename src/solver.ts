@@ -1058,7 +1058,7 @@ function play_bananagrams(available_letters: Map<string, number>, state: AppStat
             board.arr = state.last_game.board;
             return {
                 board: board_to_vec(board, state.last_game.min_col, state.last_game.max_col, state.last_game.min_row, state.last_game.max_row, new Set()),
-                elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                elapsed: ((new Date()).getTime() - start.getTime()),
                 state: {
                     board: state.last_game.board,
                     min_col: state.last_game.min_col,
@@ -1085,7 +1085,7 @@ function play_bananagrams(available_letters: Map<string, number>, state: AppStat
                     const previous_idxs = get_previous_idxs(state.last_game.play_sequence, attempt[1]);
                     return {
                         board: board_to_vec(attempt[0], attempt[2], attempt[3], attempt[4], attempt[5], previous_idxs),
-                        elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                        elapsed: ((new Date()).getTime() - start.getTime()),
                         state: {
                             board: attempt[0].arr,
                             min_col: attempt[2],
@@ -1106,7 +1106,7 @@ function play_bananagrams(available_letters: Map<string, number>, state: AppStat
                 const previous_idxs = get_previous_idxs(state.last_game.play_sequence, play_sequence);
                 return {
                     board: board_to_vec(board, res[2], res[3], res[4], res[5], previous_idxs),
-                    elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                    elapsed: ((new Date()).getTime() - start.getTime()),
                     state: {
                         board: board.arr,
                         min_col: res[2],
@@ -1131,7 +1131,7 @@ function play_bananagrams(available_letters: Map<string, number>, state: AppStat
                 const previous_idxs = get_previous_idxs(state.last_game.play_sequence, attempt[1]);
                 return {
                     board: board_to_vec(attempt[0], attempt[2], attempt[3], attempt[4], attempt[5], previous_idxs),
-                    elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                    elapsed: ((new Date()).getTime() - start.getTime()),
                     state: {
                         board: attempt[0].arr,
                         min_col: attempt[2],
@@ -1173,7 +1173,7 @@ function play_bananagrams(available_letters: Map<string, number>, state: AppStat
             const previous_idxs = get_previous_idxs(state.last_game?.play_sequence, play_sequence);
             return {
                 board: board_to_vec(board, min_col, max_col, min_row, max_row, previous_idxs),
-                elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                elapsed: ((new Date()).getTime() - start.getTime()),
                 state: {
                     board: board.arr,
                     min_col: min_col,
@@ -1199,7 +1199,7 @@ function play_bananagrams(available_letters: Map<string, number>, state: AppStat
                 const previous_idxs = get_previous_idxs(state.last_game?.play_sequence, play_sequence);
                 return {
                     board: board_to_vec(board, result[1], result[2], result[3], result[4], previous_idxs),
-                    elapsed: ((new Date()).getMilliseconds() - start.getMilliseconds()),
+                    elapsed: ((new Date()).getTime() - start.getTime()),
                     state: {
                         board: board.arr,
                         min_col: result[1],
