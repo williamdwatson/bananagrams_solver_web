@@ -24,7 +24,7 @@ export default function App() {
 
     // Disable right-clicking elsewhere on the page and load the data
     useEffect(() => {
-        //document.addEventListener("contextmenu", e => e.preventDefault());
+        document.addEventListener("contextmenu", e => e.preventDefault());
         Promise.all([
             fetch("https://raw.githubusercontent.com/williamdwatson/bananagrams_solver/main/src-tauri/src/dictionary.txt"),
             fetch("https://raw.githubusercontent.com/williamdwatson/bananagrams_solver/main/src-tauri/src/short_dictionary.txt")
