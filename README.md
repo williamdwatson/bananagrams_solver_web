@@ -5,7 +5,7 @@ This is a pure-browser [Bananagrams](https://bananagrams.com/) solving program (
 The underlying algorithm has a few heuristics - it favors longer words and boards that alternate horizontally-vertically - but ultimately is exhaustive (if there is a solution, it will be found). It is relatively fast for smaller hands, but substantially slower for larger ones. 
 
 ![Screenshot of a solution of a board using 21 letters](example.png)
-*Example solution of a board - note that there is a bug with the time taken*
+*Example solution of a board - note that this is usually much slower than the Rust version*
 
 ## Usage
 A GitHub Pages-hosted version can be found at [here] (https://williamdwatson.github.io/bananagrams_solver_web/) and runs purely in the browser.
