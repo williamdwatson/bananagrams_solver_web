@@ -29,31 +29,47 @@ interface LetterInputProps {
     /**
     * Mouse event for a right-click in the letter input SplitterPanel
     */
-   contextMenu: MouseEvent<HTMLDivElement>|null,
-   /**
+    contextMenu: MouseEvent<HTMLDivElement>|null,
+    /**
     * Sets the list of words that can be played given the tiles in the hand
     * @param words Which words can be played
     */
-   setPlayableWords: (words: {short: string[], long: string[]}) => void,
-   /**
+    setPlayableWords: (words: {short: string[], long: string[]}) => void,
+    /**
     * Sets whether the visible words popup should be visible
     * @param visible Whether the popup should be visible
     */
-   setPlayableWordsVisible: (visible: boolean) => void,
+    setPlayableWordsVisible: (visible: boolean) => void,
     /**
      * Function to clear the board's results
      */
-   clearResults: () => void,
-   /**
+    clearResults: () => void,
+    /**
     * The current state of the game
     */
-   gameState: AppState|null
+    appState: AppState|null,
+    /**
+    * Undoes the previous play
+    */
+    undo: () => Uint8Array,
+    /**
+    * Redoes the previously undone play
+    */
+    redo: () => Uint8Array,
+    /**
+    * Whether an undo can be performed
+    */
+    undoPossible: boolean,
+    /**
+    * Whether a redo can be performed
+    */
+    redoPossible: boolean,
 }
 
 /**
  * Array of all uppercase Latin letters in alphabetical order
  */
-const UPPERCASE = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+export const UPPERCASE = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 /**
  * Array of all digits
  */
@@ -414,13 +430,13 @@ export default function LetterInput(props: LetterInputProps){
      * Attempts to display words makeable with the hand of letters
      */
     const viewPlayableWords = async () => {
-        if (props.gameState != null) {
+        if (props.appState != null) {
             let s = 0;
             for (const value of letterNums.values()) {
                 s += value ?? 0;
             }
             if (s < 2) {
-                props.toast.current?.show({"severity": "warn", "summary": "Not enough letters", "detail": "More than one letter must be present."})
+                props.toast.current?.show({"severity": "warn", "summary": "Not enough letters", "detail": "More than two letters must be present."})
             }
             else {
                 setPlayableWordsLoading(true);
@@ -428,7 +444,7 @@ export default function LetterInput(props: LetterInputProps){
                 UPPERCASE.forEach(c => {
                     letters.set(c, letterNums.get(c) ?? 0);
                 });
-                get_playable_words(letters, props.gameState).then(res => {
+                get_playable_words(letters, props.appState).then(res => {
                     props.setPlayableWords(res);
                     props.setPlayableWordsVisible(true);
                 })
@@ -465,7 +481,7 @@ export default function LetterInput(props: LetterInputProps){
             s += value ?? 0;
         }
         if (s < 2) {
-            props.toast.current?.show({"severity": "warn", "summary": "Not enough letters", "detail": "More than one letter must be present."})
+            props.toast.current?.show({"severity": "warn", "summary": "Not enough letters", "detail": "More than two letters must be present."})
         }
         else {
             const letters = new Map<string, number>();
@@ -474,6 +490,30 @@ export default function LetterInput(props: LetterInputProps){
             });
             props.startRunning(letters);
         }
+    }
+
+    /**
+     * Performs an undo
+     */
+    const undo = () => {
+        const new_letters = props.undo();
+        const new_map = new Map<string, number>();
+        UPPERCASE.forEach((c, i) => {
+            new_map.set(c, new_letters[i]);
+        });
+        setLetterNums(new_map);
+    }
+
+    /**
+     * Performs a redo
+     */
+    const redo = () => {
+        const new_letters = props.redo();
+        const new_map = new Map<string, number>();
+        UPPERCASE.forEach((c, i) => {
+            new_map.set(c, new_letters[i]);
+        });
+        setLetterNums(new_map);
     }
     
     return (
@@ -488,8 +528,8 @@ export default function LetterInput(props: LetterInputProps){
                     <form onSubmit={e => {e.preventDefault(); useLetters()}} autoComplete="off">
                         <InputText value={typedIn} onChange={e => setTypedIn(e.target.value.toUpperCase())} keyfilter="alpha" id="typeIn" onContextMenu={e => type_in_cm.current?.show(e)}/>
                         <br/>
-                        <Button type="submit" label="Use letters" style={{marginTop: "5px", marginRight: "5px"}}/>
-                        <Button type="reset" label="Cancel" severity="secondary" onClick={() => cancelInput()}/>
+                        <Button type="submit" label="Use letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
+                        <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => cancelInput()}/>
                     </form>
                 </TabPanel>
                 <TabPanel header="Choose randomly">
@@ -499,8 +539,8 @@ export default function LetterInput(props: LetterInputProps){
                         <span> random letters from </span>
                         <Dropdown value={randomFrom} onChange={e => setRandomFrom(e.value)} options={["standard Bananagrams", "double Bananagrams", "infinite set"]}/>
                         <br/>
-                        <Button type="submit" label="Choose letters" style={{marginTop: "5px", marginRight: "5px"}}/>
-                        <Button type="reset" label="Cancel" severity="secondary" onClick={() => cancelInput()}/>
+                        <Button type="submit" label="Choose letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
+                        <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => cancelInput()}/>
                     </form>
                 </TabPanel>
             </TabView>            
@@ -517,12 +557,16 @@ export default function LetterInput(props: LetterInputProps){
         </div>
         <br/>
         <div className="button-div">
-            <Button type="button" label="Input letters" style={{padding: "8px", marginTop: "5px", marginRight: "2%"}} onClick={() => setTypeInVisible(true)}/>
-            <Button type="button" label="View playable words" icon="pi pi-book" iconPos="right" style={{padding: "8px", marginTop: "5px"}} onClick={viewPlayableWords} loading={playableWordsLoading}/>
+            <Button type="button" label="Input letters" icon="pi pi-book" iconPos="right" style={{padding: "8px", marginRight: "2%"}} onClick={() => setTypeInVisible(true)}/>
+            <Button type="button" label="View playable words" icon="pi pi-eye" iconPos="right" style={{padding: "8px",}} onClick={viewPlayableWords} loading={playableWordsLoading}/>
         </div>
         <div className="button-div">
-            <Dropdown placeholder="Reset" options={["Reset hand", "Reset board"]} style={{marginTop: "5px", marginRight: "2%"}} onChange={e => doReset(e.value)} className="reset-dropdown" panelClassName="reset-dropdown" pt={{input: {style: {color: "white"}}, item: {className: "reset-dropdown-item"}, trigger: {style: {color: "white"}}}}/>
-            <Button type="button" label="Solve" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px"}} severity="success" onClick={solve} loading={props.running}/>
+            <Dropdown placeholder="Reset" options={["Reset hand", "Reset board"]} style={{marginRight: "2%"}} onChange={e => doReset(e.value)} className="reset-dropdown" panelClassName="reset-dropdown" pt={{input: {style: {color: "white"}}, item: {className: "reset-dropdown-item"}, trigger: {style: {color: "white"}}}}/>
+            <Button type="button" label="Solve" icon="pi pi-arrow-right" iconPos="right" severity="success" onClick={solve} loading={props.running}/>
+        </div>
+        <div className="button-div" style={{marginTop: "15px"}}>
+            <Button label="Undo" icon="pi pi-undo" iconPos="right" onClick={undo} style={{marginRight: "2%"}} disabled={!props.undoPossible}/>
+            <Button label="Redo" icon="pi pi-refresh" iconPos="right" onClick={redo} disabled={!props.redoPossible}/>
         </div>
         </>
     )
