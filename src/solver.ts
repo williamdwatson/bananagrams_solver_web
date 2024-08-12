@@ -1,6 +1,6 @@
 import { PlaySequence } from "./types";
 import { getRandomInt } from "./utilities";
-import init, { play_from_scratch } from "../bg-solver/pkg/bg_solver";
+import init, { play_from_existing, play_from_scratch } from "../bg-solver/pkg/bg_solver";
 
 export interface GameState {
     /**
@@ -259,9 +259,30 @@ export async function get_random_letters(what: "infinite set"|"standard Bananagr
 
 
 self.addEventListener("message", e => {
-    if (!e.data.hasOwnProperty("last_game")) {
+    if (e.data === "init") {
         init().then(() => {
-            self.postMessage(play_from_scratch(e.data.letters_array, e.data.use_long_dictionary, e.data.filter_letters_on_board, e.data.maximum_words_to_check));
+            self.postMessage("initialized");
         });
+    }
+    else if (!e.data.last_game) {
+        self.postMessage(play_from_scratch(
+            e.data.letters_array, e.data.use_long_dictionary, e.data.filter_letters_on_board, e.data.maximum_words_to_check,
+            new Uint8Array(), 0, 0, 0, 0
+        ));
+    }
+    else {
+        const solution = play_from_existing(
+            e.data.letters_array, e.data.last_game.letters, e.data.use_long_dictionary, e.data.filter_letters_on_board, e.data.maximum_words_to_check,
+            e.data.last_game.board, e.data.last_game.min_col, e.data.last_game.max_col, e.data.last_game.min_row, e.data.last_game.max_row
+        );
+        if (solution == null) {
+            self.postMessage(play_from_scratch(
+                e.data.letters_array, e.data.use_long_dictionary, e.data.filter_letters_on_board, e.data.maximum_words_to_check,
+                e.data.last_game.board, e.data.last_game.min_col, e.data.last_game.max_col, e.data.last_game.min_row, e.data.last_game.max_row
+            ));
+        }
+        else {
+            self.postMessage(solution);
+        }
     }
 }, false)

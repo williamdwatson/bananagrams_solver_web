@@ -64,6 +64,10 @@ interface LetterInputProps {
     * Whether a redo can be performed
     */
     redoPossible: boolean,
+    /**
+     * Whether play is possible
+     */
+    canPlay: boolean
 }
 
 /**
@@ -562,7 +566,7 @@ export default function LetterInput(props: LetterInputProps){
         </div>
         <div className="button-div">
             <Dropdown placeholder="Reset" options={["Reset hand", "Reset board"]} style={{marginRight: "2%"}} onChange={e => doReset(e.value)} className="reset-dropdown" panelClassName="reset-dropdown" pt={{input: {style: {color: "white"}}, item: {className: "reset-dropdown-item"}, trigger: {style: {color: "white"}}}}/>
-            <Button type="button" label="Solve" icon="pi pi-arrow-right" iconPos="right" severity="success" onClick={solve} loading={props.running}/>
+            <Button type="button" label="Solve" icon="pi pi-arrow-right" iconPos="right" severity="success" onClick={solve} loading={props.running} disabled={!props.canPlay}/>
         </div>
         <div className="button-div" style={{marginTop: "15px"}}>
             <Button label="Undo" icon="pi pi-undo" iconPos="right" onClick={undo} style={{marginRight: "2%"}} disabled={!props.undoPossible}/>
