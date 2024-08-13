@@ -191,7 +191,7 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
         {props.results == null || props.results.board.length === 0 ? null :
         <>
         <TransformWrapper centerOnInit onPanningStart={() => document.getElementById("results-table")!.style.cursor = "grabbing"} onPanningStop={() => document.getElementById("results-table")!.style.cursor = "grab"}>
-            <TransformComponent wrapperStyle={{width: "100%", height: "calc(100% - 4ch)"}}>
+            <TransformComponent wrapperStyle={{width: "100%", height: "calc(100% - 6.75ch)"}}>
                 <table id="results-table">
                     <tbody className="results-tbody">
                         {props.results.board.map((row, i) => {

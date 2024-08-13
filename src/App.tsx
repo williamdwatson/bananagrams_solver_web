@@ -8,9 +8,10 @@ import "./App.css";
 import LetterInput, { UPPERCASE } from "./letter_input";
 import ResultsDisplay from "./results_display";
 import PlayableWords from "./playable_words";
-import { AppState, convert_word_to_array, GameState } from "./solver";
+import { AppState, GameState } from "./types";
 import { result_t } from "./types";
 import init, { js_board_to_vec } from "../bg-solver/pkg/bg_solver";
+import Settings from "./settings";
 
 export default function App() {
     const toast = useRef<Toast>(null);
@@ -27,7 +28,7 @@ export default function App() {
     const [undoPossible, setUndoPossible] = useState(false);
     const [redoPossible, setRedoPossible] = useState(false);
     const [canPlay, setCanPlay] = useState(false);
-    const [worker, setWorker] = useState<Worker>(new Worker(new URL("solver", import.meta.url), {type: "module"}));
+    const [worker] = useState<Worker>(new Worker(new URL("solver", import.meta.url), {type: "module"}));
 
     // Set up the web worker
     // const worker = new Worker(new URL("solver", import.meta.url), {type: "module"});
@@ -55,8 +56,6 @@ export default function App() {
                 };
                 setAppState({
                     last_game: game_state,
-                    all_words_long: appStateRef.current!.all_words_long,
-                    all_words_short: appStateRef.current!.all_words_short,
                     undo_stack: [...appStateRef.current!.undo_stack, appStateRef.current!.last_game],
                     redo_stack: [],
                     maximum_words_to_check: appStateRef.current!.maximum_words_to_check,
@@ -87,45 +86,26 @@ export default function App() {
             await init(); // Initializes the WASM module
         };
         runWasm();
-        // document.addEventListener("contextmenu", e => e.preventDefault());
-        Promise.all([
-            fetch("https://raw.githubusercontent.com/williamdwatson/bananagrams_solver/main/src-tauri/src/dictionary.txt"),
-            fetch("https://raw.githubusercontent.com/williamdwatson/bananagrams_solver/main/src-tauri/src/updated_short_dictionary.txt")
-        ]).then(([long, short]) => {
-            Promise.all([
-                long.text(), short.text()
-            ]).then(([long_text, short_text]) => {
-                setAppState({
-                    last_game: null,
-                    all_words_long: long_text.split("\n").filter(word => word.length > 1).map(word => convert_word_to_array(word.toUpperCase().trim())).sort((a, b) => b.length - a.length),
-                    all_words_short: short_text.split("\n").filter(word => word.length > 1).map(word => convert_word_to_array(word.toUpperCase().trim())).sort((a, b) => b.length - a.length),
-                    undo_stack: [],
-                    redo_stack: [],
-                    maximum_words_to_check: 20_000,
-                    filter_letters_on_board: 2,
-                    use_long_dictionary: false
-                });
-            }).catch(error => {
-                toast.current?.show({severity: "error", summary: "Error getting dictionary", detail: "There was an error getting the dictionary: " + error});
-            });
-        }).catch(error => {
-            toast.current?.show({severity: "error", summary: "Error getting dictionary", detail: "There was an error getting the dictionary: " + error});
+        setAppState({
+            last_game: null,
+            undo_stack: [],
+            redo_stack: [],
+            maximum_words_to_check: 20_000,
+            filter_letters_on_board: 2,
+            use_long_dictionary: false
         });
+        // document.addEventListener("contextmenu", e => e.preventDefault());
     }, []);
 
     /**
      * Runs the solver
      * @param letters Mapping of length-one letter strings to the number of that letter present in the hand
      */
-    const startRunning = (letters: Map<string, number>) => {
+    const startRunning = (letters_array: Uint8Array) => {
         setRunning(true);
         startTimeRef.current = Date.now();
         if (appState != null) {
             if (appState.last_game != null) {
-                const letters_array = new Uint8Array(26);
-                for (let i=0; i<UPPERCASE.length; i++) {
-                    letters_array[i] = letters.get(UPPERCASE[i]) ?? 0;
-                }
                 worker.postMessage({
                     letters_array,
                     last_game: appState.last_game,
@@ -135,10 +115,6 @@ export default function App() {
                 })
             }
             else {
-                const letters_array = new Uint8Array(26);
-                for (let i=0; i<UPPERCASE.length; i++) {
-                    letters_array[i] = letters.get(UPPERCASE[i]) ?? 0;
-                }
                 worker.postMessage({
                     letters_array,
                     last_game: null,
@@ -158,8 +134,6 @@ export default function App() {
             setResults(null);
             setAppState({
                 last_game: null,
-                all_words_long: appState.all_words_long,
-                all_words_short: appState.all_words_short,
                 undo_stack: [...appState.undo_stack, appState.last_game],
                 redo_stack: [],
                 maximum_words_to_check: appState.maximum_words_to_check,
@@ -192,8 +166,6 @@ export default function App() {
             if (prev_game_state == null) {
                 setAppState({
                     last_game: null,
-                    all_words_long: appState!.all_words_long,
-                    all_words_short: appState!.all_words_short,
                     undo_stack: [...appState!.undo_stack, null],
                     redo_stack: appState!.redo_stack.slice(0, -1),
                     maximum_words_to_check: appState!.maximum_words_to_check,
@@ -206,8 +178,6 @@ export default function App() {
             else {
                 setAppState({
                     last_game: prev_game_state,
-                    all_words_long: appState!.all_words_long,
-                    all_words_short: appState!.all_words_short,
                     undo_stack: [...appState!.undo_stack, appState!.last_game],
                     redo_stack: appState!.redo_stack.slice(0, -1),
                     maximum_words_to_check: appState!.maximum_words_to_check,
@@ -247,8 +217,6 @@ export default function App() {
             if (prev_game_state == null) {
                 setAppState({
                     last_game: null,
-                    all_words_long: appState!.all_words_long,
-                    all_words_short: appState!.all_words_short,
                     undo_stack: appState!.undo_stack.slice(0, -1),
                     redo_stack: [...appState!.redo_stack, appState!.last_game],
                     maximum_words_to_check: appState!.maximum_words_to_check,
@@ -261,8 +229,6 @@ export default function App() {
             else {
                 setAppState({
                     last_game: prev_game_state,
-                    all_words_long: appState!.all_words_long,
-                    all_words_short: appState!.all_words_short,
                     undo_stack: appState!.undo_stack.slice(0, -1),
                     redo_stack: [...appState!.redo_stack, appState!.last_game],
                     maximum_words_to_check: appState!.maximum_words_to_check,
@@ -288,6 +254,7 @@ export default function App() {
                 <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay}
                              contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
                              clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible}/>
+                <Settings toast={toast} appState={appState} setAppState={setAppState}/>
             </SplitterPanel>
             <SplitterPanel size={panelSizes[1]} style={{display: "flex", justifyContent: "center", alignItems: "center"}} pt={{root: {onContextMenu: e => setResultsContextMenu(e)}}}>
                 <ResultsDisplay toast={toast} results={results} contextMenu={resultsContextMenu} clearResults={clearResults} running={running} panelWidth={panelSizes[1]}/>

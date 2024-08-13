@@ -302,6 +302,17 @@ fn convert_word_to_array(word: &str) -> Word {
     word.chars().filter(|c| c.is_ascii_uppercase()).map(|c| (c as usize) - 65).collect()
 }
 
+/// Converts a numeric vector representation into a `String`
+/// # Arguments
+/// * `arr` - Numeric vector of the word
+/// # Returns
+/// * `String` - `arr` converted into a `String`, with each number converted from 'A' (0) to 'Z' (25)
+/// # See also
+/// `convert_word_to_array`
+fn convert_array_to_word(arr: &Word) -> String {
+    arr.iter().map(|c| (*c as u8+65) as char).collect()
+}
+
 /// Converts a `board` to a vector of vectors of strings
 /// # Arguments
 /// * `board` - Board to display
@@ -1163,7 +1174,7 @@ fn play_removing(board: &mut Board, letters_on_board: &mut Letters, min_col: usi
             Ok(r) => {
                 // Ok + Some indicates that a solution was found
                 if let Some(rr) = r {
-                    // If we found a solution, set `stop_t` to true and return it
+                    // If we found a solution, return it
                     if rr.0 {
                         return Some((rr.1, rr.2, rr.3, rr.4));
                     }
@@ -1315,7 +1326,7 @@ fn play_existing(old_board: &Board, min_col: usize, max_col: usize, min_row: usi
             new_hand_letters[*p] += 1;
         });
         let valid_words_vec = dict_to_use.iter().filter(|w| check_filter_after_play_later(new_hand_letters.clone(), new_letters_on_board.clone(), w, filter_letters_on_board)).collect();
-        // If we found a solution, set it as a solution and break (setting stop_t is performed in `play_removing`)
+        // If we found a solution, set it as a solution and return
         if let Some(res) = play_removing(&mut cloned_board, &mut new_letters_on_board, r.1, r.2, r.3, r.4, new_hand_letters, &valid_words_vec, &valid_words_set, filter_letters_on_board, max_words_to_check) {
             return Some((cloned_board, res.0, res.1, res.2, res.3));
         }
@@ -1356,15 +1367,32 @@ fn get_board_overlap(previous_board: &Board, new_board: &Board, previous_min_col
     overlapping_idxs
 }
 
+/// Struct for returning a solution to the frontend
 #[derive(Serialize)]
 pub struct Solution {
+    /// Flattened representation of the board
     pub board: Vec<usize>,
+    /// 2D vector of strings representing the solved board
     pub board_string: Vec<Vec<String>>,
+    /// Length-26 array of the number of each letter presennt in the hand
     pub letters: [usize; 26],
+    /// Minimum occupied column
     pub min_col: usize,
+    /// Maximum occupied column
     pub max_col: usize,
+    /// Minimum occupied row
     pub min_row: usize,
+    /// Maximum occupied row
     pub max_row: usize
+}
+
+/// Struct returned when getting playable words
+#[derive(Serialize)]
+pub struct PlayableWords {
+    /// Playable words using the shorter dictionary
+    short: Vec<String>,
+    /// Playable words using the whole Scrabble dictionary
+    long: Vec<String>
 }
 
 /// Play from an existing board
@@ -1447,10 +1475,22 @@ pub fn play_from_existing(letters_array: &[u8], old_letters_array: &[u8], use_lo
 }
 
 /// Play from scratch
+/// # Arguments
+/// * `letters_array` - From JavaScript, a Uint8Array of length 26 of the number of each letter present in the hand
+/// * `use_long_dictionary` - Whether to use the full dictionary
+/// * `filter_letters_on_board` - The maximum number of letters on the board that can be used in conjunction with letters in the hand when filtering playable words
+/// * `max_words_to_check` - Maximum number of words to check for each of the first 6 words
+/// * `old_board` - From JavaScript, a Uint8Array of the flattened previous board
+/// * `old_min_col` - The minimum played column in `old_board`
+/// * `old_max_col` - The maximum played column in `old_board`
+/// * `old_min_row` - The minimum played row in `old_board`
+/// * `old_max_row` - The maximum played row in `old_board`
+/// # Returns
+/// * `JsValue` - JavaScript value of the `Solution`, or a string error message
 #[wasm_bindgen]
 pub fn play_from_scratch(letters_array: &[u8], use_long_dictionary: bool, filter_letters_on_board: usize, max_words_to_check: usize, old_board: &[u8], old_min_col: usize, old_max_col: usize, old_min_row: usize, old_max_row: usize) -> JsValue {
     let dict_to_use: &Vec<Word> = if use_long_dictionary { &FULL_DICTIONARY} else { &SHORT_DICTIONARY };
-    // Convert the hand of letters into an appropriate representation    
+    // Convert the hand of letters into an appropriate representation
     let mut letters = [0usize; 26];
     for i in 0..26 {
         letters[i] = letters_array[i] as usize;
@@ -1526,4 +1566,21 @@ pub fn play_from_scratch(letters_array: &[u8], use_long_dictionary: bool, filter
         }
     }
     return JsValue::from_str("No solution found - dump and try again!");
+}
+
+///Gets playable words
+/// # Arguments
+/// * `letters_array` - From JavaScript, a Uint8Array of length 26 representing the number of each letter in the hand
+/// # Returns
+/// * `JsValue` of either a `PlayableWords` struct (with two keys, `short` and `long` holds vectors of the playable words as strings), or an error string
+#[wasm_bindgen]
+pub fn get_playable_words(letters_array: &[u8]) -> JsValue {
+    // Convert the hand of letters into an appropriate representation
+    let mut letters = [0usize; 26];
+    for i in 0..26 {
+        letters[i] = letters_array[i] as usize;
+    }
+    let playable_short: Vec<String> = SHORT_DICTIONARY.iter().filter(|word| is_makeable(word, &letters)).map(convert_array_to_word).collect();
+    let playable_long: Vec<String> = FULL_DICTIONARY.iter().filter(|word| is_makeable(word, &letters)).map(convert_array_to_word).collect();
+    return to_value(&PlayableWords { short: playable_short, long: playable_long }).unwrap_or(JsValue::from_str("Failed to serialize!"));
 }

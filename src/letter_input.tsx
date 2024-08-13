@@ -9,8 +9,10 @@ import { MenuItem } from "primereact/menuitem";
 import { Toast } from "primereact/toast";
 import { Dropdown } from "primereact/dropdown";
 import { TabPanel, TabView } from "primereact/tabview";
-import { AppState, get_playable_words, get_random_letters } from "./solver";
-import { readText, writeText } from "./utilities";
+import { get_random_letters } from "./solver";
+import { join_words, readText, writeText } from "./utilities";
+import { get_playable_words } from "../bg-solver/pkg/bg_solver";
+import { AppState } from "./types";
 
 interface LetterInputProps {
     /**
@@ -19,9 +21,9 @@ interface LetterInputProps {
     toast: RefObject<Toast>,
     /**
      * Function to start solving the game
-     * @param letters Map of every letter to the number present in the hand
+     * @param letters Length-26 array of the number of each letter
      */
-    startRunning: (letters: Map<string, number>) => void,
+    startRunning: (letters: Uint8Array) => void,
     /**
      * Whether the game is being solved or not
      */
@@ -120,7 +122,6 @@ export default function LetterInput(props: LetterInputProps){
     const [typedIn, setTypedIn] = useState("");
     const [randomNum, setRandomNum] = useState("21");
     const [randomFrom, setRandomFrom] = useState<"standard Bananagrams"|"double Bananagrams"|"infinite set">("standard Bananagrams");
-    const [playableWordsLoading, setPlayableWordsLoading] = useState(false);
 
     // Show the custom context menu on right click
     useEffect(() => {
@@ -443,17 +444,37 @@ export default function LetterInput(props: LetterInputProps){
                 props.toast.current?.show({"severity": "warn", "summary": "Not enough letters", "detail": "More than two letters must be present."})
             }
             else {
-                setPlayableWordsLoading(true);
-                const letters = new Map<string, number>();
-                UPPERCASE.forEach(c => {
-                    letters.set(c, letterNums.get(c) ?? 0);
+                const letters_array = new Uint8Array(26);
+                const to_many: string[] = [];
+                const to_few: string[] = [];
+                UPPERCASE.forEach((c, i) => {
+                    const n = letterNums.get(c) ?? 0;
+                    if (n > 255) {
+                        to_many.push(c);
+                    }
+                    else if (n < 0) {
+                        to_few.push(c);
+                    }
+                    else {
+                        letters_array[i] = n;
+                    }
                 });
-                get_playable_words(letters, props.appState).then(res => {
-                    props.setPlayableWords(res);
-                    props.setPlayableWordsVisible(true);
-                })
-                .catch(error => props.toast.current?.show({"severity": "warn", "summary": "An error occurred", "detail": "An error occurred getting the playable words: " + error}))
-                .finally(() => setPlayableWordsLoading(false));
+                if (to_many.length > 0) {
+                    props.toast.current?.show({severity: "warn", summary: "Too many letters", detail: `Only 255 of each letter may be chosen; the letter${to_many.length === 1 ? "" : "s"} ${join_words(to_many)} exceed${to_many.length === 1 ? "s" : ""} this`});
+                }
+                else if (to_few.length > 0) {
+                    props.toast.current?.show({severity: "warn", summary: "Negative letters", detail: `The letter${to_few.length === 1 ? "" : "s"} ${join_words(to_few)} have negative numbers`});
+                }
+                else {
+                    const res = get_playable_words(letters_array);
+                    if (typeof res === "string") {
+                        props.toast.current?.show({"severity": "warn", "summary": "An error occurred", "detail": res});
+                    }
+                    else {
+                        props.setPlayableWords(res);
+                        props.setPlayableWordsVisible(true);
+                    }
+                }
             }
         }
     }
@@ -488,11 +509,30 @@ export default function LetterInput(props: LetterInputProps){
             props.toast.current?.show({"severity": "warn", "summary": "Not enough letters", "detail": "More than two letters must be present."})
         }
         else {
-            const letters = new Map<string, number>();
-            UPPERCASE.forEach(c => {
-                letters.set(c, letterNums.get(c) ?? 0);
+            const letters = new Uint8Array(26);
+            const to_many: string[] = [];
+            const to_few: string[] = [];
+            UPPERCASE.forEach((c, i) => {
+                const n = letterNums.get(c) ?? 0;
+                if (n > 255) {
+                    to_many.push(c);
+                }
+                else if (n < 0) {
+                    to_few.push(c);
+                }
+                else {
+                    letters[i] = n;
+                }
             });
-            props.startRunning(letters);
+            if (to_many.length > 0) {
+                props.toast.current?.show({severity: "warn", summary: "Too many letters", detail: `Only 255 of each letter may be chosen; the letter${to_many.length === 1 ? "" : "s"} ${join_words(to_many)} exceed${to_many.length === 1 ? "s" : ""} this`});
+            }
+            else if (to_few.length > 0) {
+                props.toast.current?.show({severity: "warn", summary: "Negative letters", detail: `The letter${to_few.length === 1 ? "" : "s"} ${join_words(to_few)} have negative numbers`});
+            }
+            else {
+                props.startRunning(letters);
+            }
         }
     }
 
@@ -562,7 +602,7 @@ export default function LetterInput(props: LetterInputProps){
         <br/>
         <div className="button-div">
             <Button type="button" label="Input letters" icon="pi pi-book" iconPos="right" style={{padding: "8px", marginRight: "2%"}} onClick={() => setTypeInVisible(true)}/>
-            <Button type="button" label="View playable words" icon="pi pi-eye" iconPos="right" style={{padding: "8px",}} onClick={viewPlayableWords} loading={playableWordsLoading}/>
+            <Button type="button" label="View playable words" icon="pi pi-eye" iconPos="right" style={{padding: "8px",}} onClick={viewPlayableWords}/>
         </div>
         <div className="button-div">
             <Dropdown placeholder="Reset" options={["Reset hand", "Reset board"]} style={{marginRight: "2%"}} onChange={e => doReset(e.value)} className="reset-dropdown" panelClassName="reset-dropdown" pt={{input: {style: {color: "white"}}, item: {className: "reset-dropdown-item"}, trigger: {style: {color: "white"}}}}/>
