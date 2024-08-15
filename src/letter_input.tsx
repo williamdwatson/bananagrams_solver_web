@@ -69,7 +69,8 @@ interface LetterInputProps {
     /**
      * Whether play is possible
      */
-    canPlay: boolean
+    canPlay: boolean,
+    cancel: () => void
 }
 
 /**
@@ -597,7 +598,7 @@ export default function LetterInput(props: LetterInputProps){
                     </span>
                 )
             })}
-            <span style={{whiteSpace: "nowrap", marginLeft: "15px", marginRight: "5px"}}><b>Total letters:</b> {Array.from(letterNums.values()).reduce((previousValue, val) => previousValue!+val!, 0)}</span>
+            <span style={{whiteSpace: "nowrap", position: "relative", top: "3px", marginLeft: "15px", marginRight: "5px"}}><b>Total letters:</b> {Array.from(letterNums.values()).reduce((previousValue, val) => previousValue!+val!, 0)}</span>
         </div>
         <br/>
         <div className="button-div">
@@ -605,12 +606,14 @@ export default function LetterInput(props: LetterInputProps){
             <Button type="button" label="View playable words" icon="pi pi-eye" iconPos="right" style={{padding: "8px",}} onClick={viewPlayableWords}/>
         </div>
         <div className="button-div">
-            <Dropdown placeholder="Reset" options={["Reset hand", "Reset board"]} style={{marginRight: "2%"}} onChange={e => doReset(e.value)} className="reset-dropdown" panelClassName="reset-dropdown" pt={{input: {style: {color: "white"}}, item: {className: "reset-dropdown-item"}, trigger: {style: {color: "white"}}}}/>
+            {props.running ?
+            <Button label="Cancel" icon="pi pi-times" iconPos="right" severity="danger" onClick={props.cancel} style={{marginRight: "2%"}}/>
+            : <Dropdown placeholder="Reset" options={["Reset hand", "Reset board"]} style={{marginRight: "2%"}} onChange={e => doReset(e.value)} disabled={props.running} className="reset-dropdown" panelClassName="reset-dropdown" pt={{input: {style: {color: "white"}}, item: {className: "reset-dropdown-item"}, trigger: {style: {color: "white"}}}}/>}
             <Button type="button" label="Solve" icon="pi pi-arrow-right" iconPos="right" severity="success" onClick={solve} loading={props.running} disabled={!props.canPlay}/>
         </div>
         <div className="button-div" style={{marginTop: "15px"}}>
-            <Button label="Undo" icon="pi pi-undo" iconPos="right" onClick={undo} style={{marginRight: "2%"}} disabled={!props.undoPossible}/>
-            <Button label="Redo" icon="pi pi-refresh" iconPos="right" onClick={redo} disabled={!props.redoPossible}/>
+            <Button label="Undo" icon="pi pi-undo" iconPos="right" onClick={undo} style={{marginRight: "2%"}} disabled={props.running || !props.undoPossible}/>
+            <Button label="Redo" icon="pi pi-refresh" iconPos="right" onClick={redo} disabled={props.running || !props.redoPossible}/>
         </div>
         </>
     )

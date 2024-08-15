@@ -52,7 +52,7 @@ function getWindowDimensions() {
  * Hook to get the window's width and height; see https://stackoverflow.com/a/36862446
  * @returns The window's dimensions
  */
-function useWindowDimensions() {
+export function useWindowDimensions() {
     const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
 
     useEffect(() => {
@@ -202,10 +202,10 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
                                             return <td key={"row-"+i+"-cell-"+j} className="emptyCell"></td>
                                         }
                                         else if (val.length === 2) {
-                                            return <td key={"row-"+i+"-cell-"+j} className="previouslyPlayedCell">{val.charAt(0)}</td>
+                                            return <td key={"row-"+i+"-cell-"+j} className="previouslyPlayedCell" aria-label={`Row ${i}, column ${j}: ${val.charAt(0)} (previously played)`}>{val.charAt(0)}</td>
                                         }
                                         else {
-                                            return <td key={"row-"+i+"-cell-"+j} className="occupiedCell">{val}</td>
+                                            return <td key={"row-"+i+"-cell-"+j} className="occupiedCell" aria-label={`Row ${i}, column ${j}: ${val}`}>{val}</td>
                                         }
                                     })}
                                 </tr>

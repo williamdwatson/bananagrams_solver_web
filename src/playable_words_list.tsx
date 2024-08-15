@@ -168,9 +168,9 @@ export default function PlayableWordsList(props: PlayableWordsListProps) {
                         <InputText value={filter} onChange={e => setFilter(e.target.value.toUpperCase())} keyfilter="alpha" style={{margin: "0 5px"}} onContextMenu={e => filter_cm.current?.show(e)}/>
                         <Dropdown value={filterType} onChange={e => setFilterType(e.value)} options={["Starts with", "Does not start with", "Contains", "Does not contain", "Ends with", "Does not end with"]}/>
                     </div>
-                    <VirtualScroller items={sorted_and_filtered} itemSize={40} itemTemplate={playableWordTemplate} style={{ width: "30vw", height: "50vh" }} />
+                    <VirtualScroller items={sorted_and_filtered} itemSize={40} itemTemplate={playableWordTemplate} style={{ minWidth: "30vw", height: "50vh" }} />
                     <Button type="button" label="See stats" icon="pi pi-calculator" iconPos="right" onClick={() => setShowStats(true)} style={{marginTop: "5px"}}/>
-            </div>
+                </div>
             : null}
         </div>
         </>

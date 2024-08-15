@@ -2,16 +2,19 @@ import { useState, useRef, useEffect, MouseEvent } from "react";
 import "primereact/resources/themes/tailwind-light/theme.css";
 import "primereact/resources/primereact.min.css";
 import 'primeicons/primeicons.css';
+import { ScrollPanel } from "primereact/scrollpanel";
 import { Splitter, SplitterPanel } from "primereact/splitter";
 import { Toast } from "primereact/toast";
 import "./App.css";
-import LetterInput, { UPPERCASE } from "./letter_input";
-import ResultsDisplay from "./results_display";
+import LetterInput from "./letter_input";
+import ResultsDisplay, { useWindowDimensions } from "./results_display";
 import PlayableWords from "./playable_words";
 import { AppState, GameState } from "./types";
 import { result_t } from "./types";
 import init, { js_board_to_vec } from "../bg-solver/pkg/bg_solver";
 import Settings from "./settings";
+import { Button } from "primereact/button";
+import { Dropdown } from "primereact/dropdown";
 
 export default function App() {
     const toast = useRef<Toast>(null);
@@ -24,11 +27,12 @@ export default function App() {
     const [resultsContextMenu, setResultsContextMenu] = useState<MouseEvent<HTMLDivElement>|null>(null);
     const [playableWordsVisible, setPlayableWordsVisible] = useState(false);
     const [playableWords, setPlayableWords] = useState<{short: string[], long: string[]}|null>(null);
-    const [panelSizes, setPanelSizes] = useState<number[]>([26, 74]);
+    const [panelSizes, setPanelSizes] = useState<[number, number]>([26, 74]);
     const [undoPossible, setUndoPossible] = useState(false);
     const [redoPossible, setRedoPossible] = useState(false);
     const [canPlay, setCanPlay] = useState(false);
-    const [worker] = useState<Worker>(new Worker(new URL("solver", import.meta.url), {type: "module"}));
+    const [worker, setWorker] = useState<Worker>(new Worker(new URL("solver", import.meta.url), {type: "module"}));
+    const dimensions = useWindowDimensions();
 
     // Set up the web worker
     // const worker = new Worker(new URL("solver", import.meta.url), {type: "module"});
@@ -80,7 +84,7 @@ export default function App() {
         appStateRef.current = appState;
     }, [appState]);
 
-    // Disable right-clicking elsewhere on the page and load the data
+    // Disable right-clicking elsewhere on the page and initialize the WASM
     useEffect(() => {
         const runWasm = async () => {
             await init(); // Initializes the WASM module
@@ -94,7 +98,7 @@ export default function App() {
             filter_letters_on_board: 2,
             use_long_dictionary: false
         });
-        // document.addEventListener("contextmenu", e => e.preventDefault());
+        document.addEventListener("contextmenu", e => e.preventDefault());
     }, []);
 
     /**
@@ -245,21 +249,60 @@ export default function App() {
         }
     }
 
-    return (
-        <>
-        <Toast ref={toast}/>
-        <PlayableWords playableWords={playableWords} visible={playableWordsVisible} setVisible={setPlayableWordsVisible}/>
-        <Splitter style={{height: "98vh"}} onResizeEnd={e => setPanelSizes(e.sizes)}>
-            <SplitterPanel size={panelSizes[0]} pt={{root: {onContextMenu: e => setLetterInputContextMenu(e)}}}>
-                <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay}
-                             contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
-                             clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible}/>
-                <Settings toast={toast} appState={appState} setAppState={setAppState}/>
-            </SplitterPanel>
-            <SplitterPanel size={panelSizes[1]} style={{display: "flex", justifyContent: "center", alignItems: "center"}} pt={{root: {onContextMenu: e => setResultsContextMenu(e)}}}>
-                <ResultsDisplay toast={toast} results={results} contextMenu={resultsContextMenu} clearResults={clearResults} running={running} panelWidth={panelSizes[1]}/>
-            </SplitterPanel>
-        </Splitter>
-        </>
-    );
+    /**
+     * Cancels the solver by terminating and reinitializing the web worker
+     */
+    const cancelRun = () => {
+        worker.terminate();
+        setRunning(false);
+        setCanPlay(false);
+        setWorker(new Worker(new URL("solver", import.meta.url), {type: "module"}));
+    }
+
+    if (dimensions.width < 800) {
+        return (
+            <>
+            <Toast ref={toast}/>
+            <ScrollPanel style={{ width: "100%", height: "100%" }}>
+                <div style={{width: "100%", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", paddingTop: "25%", paddingBottom: "25%"}}>
+                    <div style={{display: "grid", justifyContent:"center", alignItems: "center", width: "100%", height: "65%"}}>
+                    <Button label="Input letters"/>
+                    <Button label="View playable words"/>
+                    <div>
+                        <Dropdown />
+                        <Button label="Solve"/>
+                    </div>
+                    <Button label="View results" severity="success"/>
+                    <div style={{display: "flex", justifyContent: "center"}}>
+                        <Button label="Undo" icon="pi pi-undo" iconPos="right" onClick={undo} style={{marginRight: "2%"}} disabled={running || !undoPossible}/>
+                        <Button label="Redo" icon="pi pi-refresh" iconPos="right" onClick={redo} disabled={running || !redoPossible}/>
+                    </div>
+                    <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
+                    </div>
+                </div>
+            </ScrollPanel>
+            </>
+        )
+    }
+    else {
+        return (
+            <>
+            <Toast ref={toast}/>
+            <PlayableWords playableWords={playableWords} visible={playableWordsVisible} setVisible={setPlayableWordsVisible}/>
+            <Splitter style={{height: "98vh"}} onResizeEnd={e => setPanelSizes(e.sizes as [number, number])}>
+                <SplitterPanel size={panelSizes[0]} pt={{root: {onContextMenu: e => setLetterInputContextMenu(e)}}} minSize={20}>
+                    <ScrollPanel style={{ width: "100%", height: "100%" }}>
+                        <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
+                                    contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
+                                    clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible}/>
+                        <Settings toast={toast} appState={appState} setAppState={setAppState}/>
+                    </ScrollPanel>
+                </SplitterPanel>
+                <SplitterPanel size={panelSizes[1]} style={{display: "flex", justifyContent: "center", alignItems: "center"}} pt={{root: {onContextMenu: e => setResultsContextMenu(e)}}} minSize={50}>
+                    <ResultsDisplay toast={toast} results={results} contextMenu={resultsContextMenu} clearResults={clearResults} running={running} panelWidth={panelSizes[1]}/>
+                </SplitterPanel>
+            </Splitter>
+            </>
+        );
+    }
 }

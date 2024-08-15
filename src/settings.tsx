@@ -21,7 +21,11 @@ interface SettingsProps {
     /**
      * Toast popup reference
      */
-    toast: RefObject<Toast>
+    toast: RefObject<Toast>,
+    /**
+     * Whether to format for mobile display
+     */
+    mobile?: boolean
 }
 
 /**
@@ -83,42 +87,46 @@ export default function Settings(props: SettingsProps) {
         }
     }
 
+    const about_filter_letters_on_board = <>
+    <p>The maximum number of letters on the board that can be used in conjuction with letters in the hand when filtering playable words</p>
+                    <p><strong>Lower values:</strong> <em>Usually</em> faster solutions</p>
+                    <p><strong>Higher values:</strong> <em>Usually</em> slower solutions, but more likely to find a solution if one exists. For an exhaustive search, use a value greater than the total number of letters.</p>
+    </>
+
     return (
         <>
         <Dialog header="Settings" visible={showSettings} onHide={() => setShowSettings(false)}>
-            <div className="settings-div">
-                <label htmlFor="filter_letters_on_board">Usable letters on board:</label> <InputNumber value={filterLettersOnBoard} onChange={e => setFilterLettersOnBoard(e.value)} min={0} inputId="filter_letters_on_board"/>
-                <OverlayPanel ref={filterLettersInfo} style={{maxWidth: "33vw"}}>
-                    <p>The maximum number of letters on the board that can be used in conjuction with letters in the hand when filtering playable words</p>
-                    <p><strong>Lower values:</strong> <em>Usually</em> faster solutions</p>
-                    <p><strong>Higher values:</strong> <em>Usually</em> slower solutions, but more likely to find a solution if one exists. For an exhaustive search, use a value greater than the total number of letters.</p>
+            <div className="settings-div" style={{marginTop: props.mobile ? "15px" : undefined}}>
+                <label htmlFor="filter_letters_on_board">Usable letters on board:</label> <InputNumber value={filterLettersOnBoard} onChange={e => setFilterLettersOnBoard(e.value)} min={0} max={2**32-1} inputId="filter_letters_on_board"/>
+                <OverlayPanel ref={filterLettersInfo} style={{maxWidth: props.mobile ? "90vw" : "33vw"}}>
+                    {about_filter_letters_on_board}
                 </OverlayPanel>
-                <i className="pi pi-info-circle info-overlay" onClick={e => filterLettersInfo.current?.toggle(e)}></i>
+                <i className="pi pi-info-circle info-overlay" onClick={e => filterLettersInfo.current?.toggle(e)} aria-haspopup></i>
             </div>
-            <div className="settings-div">
-                <label htmlFor="max_words_to_check">Maximum iterations:</label> <InputNumber value={maximumWordsToCheck} onChange={e => setMaximumWordsToCheck(e.value)} min={0} inputId="max_words_to_check"/>
-                <OverlayPanel ref={maxWordsInfo} style={{maxWidth: "33vw"}}>
+            <div className="settings-div" style={{marginTop: props.mobile ? "10px" : undefined}}>
+                <label htmlFor="max_words_to_check">Maximum iterations:</label> <InputNumber value={maximumWordsToCheck} onChange={e => setMaximumWordsToCheck(e.value)} min={0} max={2**32-1} inputId="max_words_to_check"/>
+                <OverlayPanel ref={maxWordsInfo} style={{maxWidth: props.mobile ? "90vw" : "33vw"}}>
                     <p>The maximum number of iterations before the solver stops and returns no solution (i.e. a "dump") - this applies separately to each of the first six words checked</p>
                     <p><strong>Lower values:</strong> Faster "dump" solutions</p>
                     <p><strong>Higher values:</strong> Slower "dump" solutions, but more likely to find a solution if one exists. For an exhaustive search, use a very large value.</p>
                 </OverlayPanel>
-                <i className="pi pi-info-circle info-overlay" onClick={e => maxWordsInfo.current?.toggle(e)}></i>
+                <i className="pi pi-info-circle info-overlay" onClick={e => maxWordsInfo.current?.toggle(e)} aria-haspopup></i>
             </div>
-            <div className="settings-div">
+            <div className="settings-div" style={{marginTop: props.mobile ? "10px" : undefined}}>
                 <label htmlFor="use_dictionary">Dictionary:</label> <Dropdown value={whichDictionary} onChange={e => setWhichDictionary(e.value)} options={["Short", "Full"]} inputId="use_dictionary"/>
-                <OverlayPanel ref={whichDictionaryInfo} style={{maxWidth: "33vw"}}>
+                <OverlayPanel ref={whichDictionaryInfo} style={{maxWidth: props.mobile ? "90vw" : "33vw"}}>
                     <p>Which dictionary to use</p>
                     <p><strong>Short:</strong> Contains 30,515 words</p>
                     <p><strong>Full:</strong> Contains 178,663 words, including some that some players might consider questionable</p>
                 </OverlayPanel>
-                <i className="pi pi-info-circle info-overlay" onClick={e => whichDictionaryInfo.current?.toggle(e)}></i>
+                <i className="pi pi-info-circle info-overlay" onClick={e => whichDictionaryInfo.current?.toggle(e)} aria-haspopup></i>
             </div>
-            <div>
+            <div style={{display: "flex", justifyContent: "center", marginTop: "15px"}}>
                 <Button label="Use settings" icon="pi pi-arrow-right" iconPos="right" onClick={setSettings}/>
                 <Button label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => setShowSettings(false)} style={{marginLeft: "5px"}}/>
             </div>
         </Dialog>
-        <Dialog header="About" visible={aboutVisible} onHide={() => setAboutVisible(false)}>
+        <Dialog header="About" visible={aboutVisible} onHide={() => setAboutVisible(false)} style={{maxWidth: props.mobile ? undefined : "90vw"}} maximized={props.mobile}>
             <p>
                 This Bananagrams solver was written by William Watson, with source available on <LinkWrapper href="https://github.com/williamdwatson/bananagrams_solver_web">GitHub</LinkWrapper>.
             </p>
@@ -126,7 +134,7 @@ export default function Settings(props: SettingsProps) {
                 The frontend was written using React/Typescript, and uses the <LinkWrapper href="https://primereact.org/">PrimeReact</LinkWrapper> and <LinkWrapper href="https://github.com/BetterTyped/react-zoom-pan-pinch">react-zoom-pan-pinch</LinkWrapper> libraries.
             </p>
             <p>
-                The backend was written in Rust and compiled to WebAssembly using the <LinkWrapper href="https://github.com/rustwasm/wasm-pack">Tauri</LinkWrapper> library.
+                The backend was written in Rust and compiled to WebAssembly using the <LinkWrapper href="https://github.com/rustwasm/wasm-pack">wasm-pack</LinkWrapper> library.
             </p>
             <p>
                 Dictionaries are derived from several sources and are available on the main project's <LinkWrapper href="https://github.com/williamdwatson/bananagrams_solver">GitHub</LinkWrapper>:
@@ -166,7 +174,7 @@ export default function Settings(props: SettingsProps) {
                 </li>
             </ul>
         </Dialog>
-        <div style={{marginTop: "5vh", width: "100%", display: "flex", justifyContent: "center"}}>
+        <div style={{marginTop: "5%", width: "100%", display: "flex", justifyContent: "center"}}>
             <Button label="Settings" icon="pi pi-cog" iconPos="right" onClick={() => setShowSettings(true)}/>
             <Button label="About" icon="pi pi-info-circle" iconPos="right" onClick={() => setAboutVisible(true)} style={{marginLeft: "5px"}}/>
         </div>
