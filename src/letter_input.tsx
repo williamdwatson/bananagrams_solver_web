@@ -70,7 +70,14 @@ interface LetterInputProps {
      * Whether play is possible
      */
     canPlay: boolean,
-    cancel: () => void
+    /**
+     * Cancels the current solve
+     */
+    cancel: () => void,
+    /**
+     * Whether this is for a mobile device
+     */
+    mobile?: boolean
 }
 
 /**
@@ -584,13 +591,16 @@ export default function LetterInput(props: LetterInputProps){
                         <span> random letters from </span>
                         <Dropdown value={randomFrom} onChange={e => setRandomFrom(e.value)} options={["standard Bananagrams", "double Bananagrams", "infinite set"]}/>
                         <br/>
+                        {randomFrom === "standard Bananagrams" ? <div style={{display: "flex", justifyContent: "center", marginTop: "5px", marginBottom: "5px"}}><small>144 max</small><br/></div>
+                        : randomFrom === "double Bananagrams" ? <div style={{display: "flex", justifyContent: "center", marginTop: "5px", marginBottom: "5px"}}><small>288 max</small><br/></div>
+                        : null}
                         <Button type="submit" label="Choose letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
                         <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => cancelInput()}/>
                     </form>
                 </TabPanel>
             </TabView>            
         </Dialog>
-        <div>
+        <div style={{textAlign: props.mobile ? "center" : undefined}}>
             {UPPERCASE.map((c, i) => {
                 return (
                     <span className="letter-input-span" key={"span-"+c}><label htmlFor={"char-"+c} className="letter-input-label">{c}:</label>
@@ -598,6 +608,7 @@ export default function LetterInput(props: LetterInputProps){
                     </span>
                 )
             })}
+            {props.mobile ? <br/> : null}
             <span style={{whiteSpace: "nowrap", position: "relative", top: "3px", marginLeft: "15px", marginRight: "5px"}}><b>Total letters:</b> {Array.from(letterNums.values()).reduce((previousValue, val) => previousValue!+val!, 0)}</span>
         </div>
         <br/>

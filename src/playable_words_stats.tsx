@@ -73,7 +73,11 @@ interface PlayableWordsStatsProps {
     /**
      * The type of the playable words to display in the popup's title
      */
-    type: string
+    type: string,
+    /**
+     * Whether this is for a mobile display
+     */
+    mobile?: boolean
 }
 
 /**
@@ -170,27 +174,29 @@ export default function PlayableWordsStats(props: PlayableWordsStatsProps) {
         <>
         {props.playableWords != null ? 
         <Dialog header={"Statistics for " + props.type + " playable words"} visible={props.visible} onHide={() => props.setVisible(false)}>
-            <Statistic name="Total number" value={props.playableWords.length.toLocaleString()}/>
-            <Statistic name="Maximum length" value={maxForLargeArray(props.playableWords.map(word => word.length))}/>
-            <Statistic name="Average length" value={(props.playableWords.reduce((previousValue, currentWord) => previousValue + currentWord.length, 0)/props.playableWords.length).toFixed(2)}/>
-            <Statistic name="Most common length" value={mode(props.playableWords.map(word => word.length))}/>
-            <Statistic name="Most common starting letter" value={mode(props.playableWords.map(word => word.charAt(0)))}/>
-            <Statistic name="Most common ending letter" value={mode(props.playableWords.map(word => word.charAt(word.length-1)))}/>
-            <Statistic name="Most commonly occurring letter" value={mode(props.playableWords.flatMap(word => [...word]))}/>
-            <Accordion>
-                <AccordionTab header="Lengths">
-                    <StatisticTable what="Length" values={lengths} datatype="number"/>
-                </AccordionTab>
-                <AccordionTab header="Starting letters">
-                    <StatisticTable what="Letter" values={starting_letters} datatype="text"/>
-                </AccordionTab>
-                <AccordionTab header="Ending letters">
-                    <StatisticTable what="Letter" values={ending_letters} datatype="text"/>
-                </AccordionTab>
-                <AccordionTab header="Used letters">
-                    <StatisticTable what="Letter" values={used_letters} datatype="text"/>
-                </AccordionTab>
-            </Accordion>
+            <div style={{paddingTop: props.mobile ? "2vh" : undefined}}>
+                <Statistic name="Total number" value={props.playableWords.length.toLocaleString()}/>
+                <Statistic name="Maximum length" value={maxForLargeArray(props.playableWords.map(word => word.length))}/>
+                <Statistic name="Average length" value={(props.playableWords.reduce((previousValue, currentWord) => previousValue + currentWord.length, 0)/props.playableWords.length).toFixed(2)}/>
+                <Statistic name="Most common length" value={mode(props.playableWords.map(word => word.length))}/>
+                <Statistic name="Most common starting letter" value={mode(props.playableWords.map(word => word.charAt(0)))}/>
+                <Statistic name="Most common ending letter" value={mode(props.playableWords.map(word => word.charAt(word.length-1)))}/>
+                <Statistic name="Most commonly occurring letter" value={mode(props.playableWords.flatMap(word => [...word]))}/>
+                <Accordion>
+                    <AccordionTab header="Lengths">
+                        <StatisticTable what="Length" values={lengths} datatype="number"/>
+                    </AccordionTab>
+                    <AccordionTab header="Starting letters">
+                        <StatisticTable what="Letter" values={starting_letters} datatype="text"/>
+                    </AccordionTab>
+                    <AccordionTab header="Ending letters">
+                        <StatisticTable what="Letter" values={ending_letters} datatype="text"/>
+                    </AccordionTab>
+                    <AccordionTab header="Used letters">
+                        <StatisticTable what="Letter" values={used_letters} datatype="text"/>
+                    </AccordionTab>
+                </Accordion>
+            </div>
         </Dialog>
         : null
         }

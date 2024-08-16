@@ -263,21 +263,15 @@ export default function App() {
         return (
             <>
             <Toast ref={toast}/>
+            <PlayableWords playableWords={playableWords} visible={playableWordsVisible} setVisible={setPlayableWordsVisible} mobile/>
             <ScrollPanel style={{ width: "100%", height: "100%" }}>
-                <div style={{width: "100%", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", paddingTop: "25%", paddingBottom: "25%"}}>
-                    <div style={{display: "grid", justifyContent:"center", alignItems: "center", width: "100%", height: "65%"}}>
-                    <Button label="Input letters"/>
-                    <Button label="View playable words"/>
-                    <div>
-                        <Dropdown />
-                        <Button label="Solve"/>
-                    </div>
-                    <Button label="View results" severity="success"/>
-                    <div style={{display: "flex", justifyContent: "center"}}>
-                        <Button label="Undo" icon="pi pi-undo" iconPos="right" onClick={undo} style={{marginRight: "2%"}} disabled={running || !undoPossible}/>
-                        <Button label="Redo" icon="pi pi-refresh" iconPos="right" onClick={redo} disabled={running || !redoPossible}/>
-                    </div>
-                    <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
+                <div style={{width: "100%", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center"}}>
+                    <div style={{display: "grid", justifyContent:"center", alignItems: "center", width: "100%"}}>
+                        <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
+                                     contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
+                                     clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
+                        <Button label="View results" severity="success" style={{marginTop: "3vh"}}/>
+                        <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
                     </div>
                 </div>
             </ScrollPanel>

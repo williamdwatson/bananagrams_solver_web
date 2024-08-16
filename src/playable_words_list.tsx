@@ -10,6 +10,7 @@ import { VirtualScroller, VirtualScrollerTemplateOptions } from "primereact/virt
 import { useDebounce } from "primereact/hooks";
 import PlayableWordsStats from "./playable_words_stats";
 import { readText, writeText } from "./utilities";
+import { Dialog } from "primereact/dialog";
 
 interface PlayableWordsListProps {
     /**
@@ -19,7 +20,11 @@ interface PlayableWordsListProps {
     /**
      * Which set of playable words (used for IDs)
      */
-    which: string
+    which: string,
+    /**
+     * Whether this is for a mobile display
+     */
+    mobile?: boolean
 }
 
 type filter_types = "Starts with"|"Does not start with"|"Contains"|"Does not contain"|"Ends with"|"Does not end with";
@@ -37,6 +42,8 @@ export default function PlayableWordsList(props: PlayableWordsListProps) {
     const [filter, debouncedFilter, setFilter] = useDebounce("", 400);
     const [filterType, setFilterType] = useState<filter_types>("Starts with");
     const [showStats, setShowStats] = useState(false);
+    const [sortVisible, setSortVisible] = useState(false);
+    const [filterVisible, setFilterVisible] = useState(false);
 
     /**
      * Formats a row displaying a playable word
@@ -150,25 +157,48 @@ export default function PlayableWordsList(props: PlayableWordsListProps) {
 
     return (
         <>
-        <PlayableWordsStats playableWords={props.playableWords} visible={showStats} setVisible={setShowStats} type={props.which === "full" ? "all" : props.which}/>
+        <PlayableWordsStats playableWords={props.playableWords} visible={showStats} setVisible={setShowStats} type={props.which === "full" ? "all" : props.which} mobile={props.mobile}/>
         <div onContextMenu={e => cm.current?.show(e)}>
             <ContextMenu model={items} ref={cm}/>
             <ContextMenu model={filter_items} ref={filter_cm}/>
             {sorted_and_filtered != null ? 
                 <div>
-                    <div className="playable-word-sort-filter">
+                    {props.mobile ?
+                    <>
+                    <Dialog header="Sort" visible={sortVisible} onHide={() => setSortVisible(false)}>
+                        <div style={{textAlign: "center", paddingTop: "2vh"}}>
+                        <div className="playable-word-sort-filter">
+                            <span style={{marginLeft: "5px", cursor: "pointer"}} onClick={() => setSort(false)}>Alphabetically</span>
+                            <InputSwitch checked={sort} onChange={e => setSort(e.value ?? false)} style={{margin: "0 5px"}}/>
+                            <span style={{marginRight: "10px", cursor: "pointer"}} onClick={() => setSort(true)}>By length</span>
+                        </div>
+                        <Checkbox inputId={props.which+"_checkbox"} onChange={e => setChecked(e.checked)} checked={checked ?? false}/> <label htmlFor={props.which+"_checkbox"} style={{marginLeft: "5px"}}>Reverse</label>
+                        </div>
+                    </Dialog>
+                    <Dialog header="Filter" visible={filterVisible} onHide={() => setFilterVisible(false)}>
+                        <div style={{display: "grid", justifyContent: "center", paddingTop: "2vh"}}>
+                        <Dropdown value={filterType} onChange={e => setFilterType(e.value)} options={["Starts with", "Does not start with", "Contains", "Does not contain", "Ends with", "Does not end with"]}/><br/>
+                        <InputText value={filter} onChange={e => setFilter(e.target.value.toUpperCase())} keyfilter="alpha" style={{margin: "0 5px"}} onContextMenu={e => filter_cm.current?.show(e)} aria-label="Filter value"/>
+                        </div>
+                    </Dialog>
+                    <div style={{display: "flex", justifyContent: "center"}}>
+                        <Button label="Sort" icon="pi pi-sort-alt" iconPos="right" onClick={() => setSortVisible(true)} style={{marginRight: "5px"}}/>
+                        <Button label="Filter" icon={filter.trim() === "" ? "pi pi-filter" : "pi pi-filter-fill"} iconPos="right" onClick={() => setFilterVisible(true)}/>
+                    </div>
+                    </>
+                    : <><div className="playable-word-sort-filter">
                         <span style={{fontWeight: "bold"}}>Sort:</span>
-                        <span style={{marginLeft: "5px"}}>Alphabetically</span>
+                        <span style={{marginLeft: "5px", cursor: "pointer"}} onClick={() => setSort(false)}>Alphabetically</span>
                         <InputSwitch checked={sort} onChange={e => setSort(e.value ?? false)} style={{margin: "0 5px"}}/>
-                        <span style={{marginRight: "10px"}}>By length</span>
+                        <span style={{marginRight: "10px", cursor: "pointer"}} onClick={() => setSort(true)}>By length</span>
                         <Checkbox inputId={props.which+"_checkbox"} onChange={e => setChecked(e.checked)} checked={checked ?? false}/> <label htmlFor={props.which+"_checkbox"} style={{marginLeft: "5px"}}>Reverse</label>
                     </div>
                     <div className="playable-word-sort-filter">
-                        <span style={{fontWeight: "bold"}}>Filter:</span>
-                        <InputText value={filter} onChange={e => setFilter(e.target.value.toUpperCase())} keyfilter="alpha" style={{margin: "0 5px"}} onContextMenu={e => filter_cm.current?.show(e)}/>
+                        <label htmlFor="word_filter" style={{fontWeight: "bold"}}>Filter:</label>
+                        <InputText value={filter} onChange={e => setFilter(e.target.value.toUpperCase())} keyfilter="alpha" style={{margin: "0 5px"}} onContextMenu={e => filter_cm.current?.show(e)} id="word_filter"/>
                         <Dropdown value={filterType} onChange={e => setFilterType(e.value)} options={["Starts with", "Does not start with", "Contains", "Does not contain", "Ends with", "Does not end with"]}/>
-                    </div>
-                    <VirtualScroller items={sorted_and_filtered} itemSize={40} itemTemplate={playableWordTemplate} style={{ minWidth: "30vw", height: "50vh" }} />
+                    </div></>}
+                    <VirtualScroller items={sorted_and_filtered} itemSize={40} itemTemplate={playableWordTemplate} style={{ height: "43vh" }} />
                     <Button type="button" label="See stats" icon="pi pi-calculator" iconPos="right" onClick={() => setShowStats(true)} style={{marginTop: "5px"}}/>
                 </div>
             : null}
