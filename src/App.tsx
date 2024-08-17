@@ -18,10 +18,7 @@ import { ConfirmDialog } from "primereact/confirmdialog";
 
 
 export default function App() {
-    const toast = useRef<Toast>(null);
     const [appState, setAppState] = useState<AppState|null>(null);
-    const appStateRef = useRef<AppState|null>(null);
-    const startTimeRef = useRef(0);
     const [running, setRunning] = useState(false);
     const [results, setResults] = useState<result_t|null>(null);
     const [letterInputContextMenu, setLetterInputContextMenu] = useState<MouseEvent<HTMLDivElement>|null>(null);
@@ -34,10 +31,21 @@ export default function App() {
     const [canPlay, setCanPlay] = useState(false);
     const [solutionVisible, setSolutionVisible] = useState(false);
     const [worker, setWorker] = useState<Worker>(new Worker(new URL("solver", import.meta.url), {type: "module"}));
+
+    const appStateRef = useRef<AppState|null>(null);
+    const toast = useRef<Toast>(null);
+    const startTimeRef = useRef(0);
+    const mobileRef = useRef(false);
     const dimensions = useWindowDimensions();
 
+    const mobile = dimensions.width < 730;
+
+    // Update the ref when the mobile state changes (which presumably won't happen often in actual use)
+    useEffect(() => {
+        mobileRef.current = mobile;
+    }, [mobile]);
+
     // Set up the web worker
-    // const worker = new Worker(new URL("solver", import.meta.url), {type: "module"});
     useEffect(() => {
         worker.addEventListener("error", e => {
             toast.current?.show({severity: "error", summary: "Uh oh!", detail: `An error occurred: ${e}`});
@@ -76,6 +84,9 @@ export default function App() {
                     state: game_state
                 });
                 setRunning(false);
+                if (mobileRef.current) {
+                    setSolutionVisible(true);
+                }
             }
         });
         worker.postMessage("init");
@@ -261,7 +272,7 @@ export default function App() {
         setWorker(new Worker(new URL("solver", import.meta.url), {type: "module"}));
     }
 
-    if (dimensions.width < 730) {
+    if (mobile) {
         return (
             <>
             <Toast ref={toast}/>
@@ -273,8 +284,8 @@ export default function App() {
             <div style={{height: "95vh", display: "flex", alignItems: "center"}}>
             <div style={{display: "grid", justifyContent: "grid", alignItems: "center"}}>
                 <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
-                                contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
-                                clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
+                             contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
+                             clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
                 <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}} disabled={appState?.last_game == null}/>
                 <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
             </div>
@@ -292,8 +303,8 @@ export default function App() {
                 <SplitterPanel size={panelSizes[0]} pt={{root: {onContextMenu: e => setLetterInputContextMenu(e)}}} minSize={20}>
                     <ScrollPanel style={{ width: "100%", height: "100%" }}>
                         <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
-                                    contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
-                                    clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible}/>
+                                     contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
+                                     clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible}/>
                         <Settings toast={toast} appState={appState} setAppState={setAppState}/>
                     </ScrollPanel>
                 </SplitterPanel>
