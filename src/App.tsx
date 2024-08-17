@@ -274,7 +274,7 @@ export default function App() {
                         <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
                                      contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
                                      clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
-                        <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}}/>
+                        <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}} disabled={appState?.last_game == null}/>
                         <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
                     </div>
                 </div>

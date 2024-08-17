@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, MouseEvent, RefObject } from "react";
 import { Button } from "primereact/button";
-import { confirmDialog } from "primereact/confirmdialog";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { ContextMenu } from "primereact/contextmenu";
 import { Dialog } from "primereact/dialog";
 import { InputNumber, InputNumberValueChangeEvent } from "primereact/inputnumber";
@@ -128,7 +128,7 @@ export default function LetterInput(props: LetterInputProps){
     const [lettersInvalid, setLettersInvalid] = useState<Map<string, boolean>>(invalid);
     const [typeInVisible, setTypeInVisible] = useState(false);
     const [typedIn, setTypedIn] = useState("");
-    const [randomNum, setRandomNum] = useState("21");
+    const [randomNum, setRandomNum] = useState<number|null>(21);
     const [randomFrom, setRandomFrom] = useState<"standard Bananagrams"|"double Bananagrams"|"infinite set">("standard Bananagrams");
 
     // Show the custom context menu on right click
@@ -279,7 +279,7 @@ export default function LetterInput(props: LetterInputProps){
                 empty_letters.set(letter, 0);
             });
             confirmDialog({
-                message: "Are you sure you want to reset the hand of letters?",
+                message: <span style={props.mobile ? {position : "relative", top: "5px"} : undefined}>Are you sure you want to reset the hand of letters?</span>,
                 header: "Reset?",
                 icon: "pi pi-exclamation-triangle",
                 accept: () => setLetterNums(empty_letters)
@@ -328,7 +328,7 @@ export default function LetterInput(props: LetterInputProps){
     const pasteRandomNum = () => {
         readText().then(val => {
             if (val != null && [...val].every(char => DIGITS.includes(char))) {
-                setRandomNum(val);
+                setRandomNum(parseInt(val));
             }
         }).catch(() => {props.toast.current?.show({severity: "warn", summary: "Could not paste", detail: "Ensure that access to the clipboard is granted in order to paste."})});
     }
@@ -345,7 +345,7 @@ export default function LetterInput(props: LetterInputProps){
      * Context menu items for the random number input field
      */
     const random_num_items: MenuItem[] = [
-        { label: "Copy", icon: "pi pi-copy", command: () => writeText(randomNum) },
+        { label: "Copy", icon: "pi pi-copy", command: () => writeText(randomNum?.toString() ?? "") },
         { label: "Paste", icon: "pi pi-file-import", command: pasteRandomNum }
     ];
 
@@ -395,7 +395,7 @@ export default function LetterInput(props: LetterInputProps){
         // So the dialog has time to finish its close animation before the fields are updated
         setTimeout(() => {
             setTypedIn("");
-            setRandomNum("21");
+            setRandomNum(21);
             setRandomFrom("standard Bananagrams");
         }, 100);
     }
@@ -416,18 +416,17 @@ export default function LetterInput(props: LetterInputProps){
      * Chooses random letters based on the user's input
      */
     const chooseRandomly = () => {
-        const val = parseInt(randomNum);
-        if (randomNum.trim() === "" || isNaN(val) || val <= 0) {
+        if (randomNum == null || isNaN(randomNum) || randomNum <= 0) {
             props.toast.current?.show({severity: "warn", summary: "Invalid number", detail: "The number of letters to choose must be greater than 0"});
         }
-        else if (val > 144 && randomFrom === "standard Bananagrams") {
+        else if (randomNum > 144 && randomFrom === "standard Bananagrams") {
             props.toast.current?.show({severity: "warn", summary: "Too many letters", detail: "No more than 144 tiles can be chosen from standard Bananagrams"});
         }
-        else if (val > 288 && randomFrom === "double Bananagrams") {
+        else if (randomNum > 288 && randomFrom === "double Bananagrams") {
             props.toast.current?.show({severity: "warn", summary: "Too many letters", detail: "No more than 288 tiles can be chosen from double Bananagrams"});
         }
         else {
-            get_random_letters(randomFrom, val).then(result => {
+            get_random_letters(randomFrom, randomNum).then(result => {
                 const new_map = new Map<string, number>();
                 UPPERCASE.forEach(c => {
                     new_map.set(c, result.get(c) ?? 0);
@@ -497,7 +496,7 @@ export default function LetterInput(props: LetterInputProps){
         }
         else {
             confirmDialog({
-                message: "Are you sure you want to reset the board?",
+                message: <span style={props.mobile ? {position : "relative", top: "5px"} : undefined}>Are you sure you want to reset the board?</span>,
                 header: "Reset?",
                 icon: "pi pi-exclamation-triangle",
                 accept: props.clearResults
@@ -570,6 +569,7 @@ export default function LetterInput(props: LetterInputProps){
     
     return (
         <>
+        <ConfirmDialog/>
         <ContextMenu model={items} ref={cm}/>
         <ContextMenu model={type_in_items} ref={type_in_cm}/>
         <ContextMenu model={random_num_items} ref={random_num_cm}/>
@@ -587,7 +587,7 @@ export default function LetterInput(props: LetterInputProps){
                 <TabPanel header="Choose randomly">
                     <form onSubmit={e=> {e.preventDefault(); chooseRandomly()}} autoComplete="off">
                         <span>Choose </span>
-                        <InputText value={randomNum} onChange={e => setRandomNum(e.target.value)} keyfilter="int" size={3} onContextMenu={e => random_num_cm.current?.show(e)}/>
+                        <InputNumber value={randomNum} onChange={e => setRandomNum(e.value)} min={0} size={3} onContextMenu={e => random_num_cm.current?.show(e)}/>
                         <span> random letters from </span>
                         <Dropdown value={randomFrom} onChange={e => setRandomFrom(e.value)} options={["standard Bananagrams", "double Bananagrams", "infinite set"]}/>
                         <br/>
