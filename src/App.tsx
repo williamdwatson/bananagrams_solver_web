@@ -281,14 +281,14 @@ export default function App() {
             <Dialog header="Solution" visible={solutionVisible} onHide={() => setSolutionVisible(false)} maximized>
                 <ResultsDisplay toast={toast} results={results} contextMenu={resultsContextMenu} clearResults={clearResults} running={running} panelWidth={100} mobile/>
             </Dialog>
-            <div style={{height: "95vh", display: "flex", alignItems: "center"}}>
-            <div style={{display: "grid", justifyContent: "grid", alignItems: "center"}}>
-                <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
-                             contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
-                             clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
-                <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}} disabled={appState?.last_game == null}/>
-                <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
-            </div>
+            <div style={{height: "94vh", display: "flex", alignItems: "center", marginTop: "10px", marginBottom: "5px"}}>
+                <div style={{display: "grid", justifyContent: "grid", alignItems: "center"}}>
+                    <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
+                                contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
+                                clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
+                    <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}} disabled={appState?.last_game == null}/>
+                    <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
+                </div>
             </div>
             </>
         )
