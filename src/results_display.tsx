@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, MouseEvent, RefObject, CSSProperties } from "react";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { confirmDialog } from "primereact/confirmdialog";
 import { ContextMenu } from "primereact/contextmenu";
 import { MenuItem } from "primereact/menuitem";
 import { Toast } from "primereact/toast";
@@ -8,6 +8,7 @@ import SolutionTime from "./solution_time";
 import { result_t } from "./types";
 import { writeText } from "./utilities";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import WrapperControls from "./wrapper_controls";
 
 interface ResultsDisplayProps {
     /**
@@ -197,11 +198,11 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
 
     return (
         <>
-        <ConfirmDialog/>
         <ContextMenu model={items} ref={cm}/>
         {props.results == null || props.results.board.length === 0 ? null :
         <>
         <TransformWrapper centerOnInit onPanningStart={() => document.getElementById("results-table")!.style.cursor = "grabbing"} onPanningStop={() => document.getElementById("results-table")!.style.cursor = "grab"}>
+            <WrapperControls/>
             <TransformComponent wrapperStyle={{width: "100%", height: "calc(100% - 6.75ch)"}}>
                 <table id="results-table">
                     <tbody className="results-tbody">

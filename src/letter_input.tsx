@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, MouseEvent, RefObject } from "react";
 import { Button } from "primereact/button";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { confirmDialog } from "primereact/confirmdialog";
 import { ContextMenu } from "primereact/contextmenu";
 import { Dialog } from "primereact/dialog";
 import { InputNumber, InputNumberValueChangeEvent } from "primereact/inputnumber";
@@ -413,6 +413,18 @@ export default function LetterInput(props: LetterInputProps){
     }
 
     /**
+     * Callback when the "Add letters" button is clicked
+     */
+    const addLetters = () => {
+        const new_letters = new Map(letterNums);
+        UPPERCASE.forEach(c => {
+            new_letters.set(c, (new_letters.get(c) ?? 0) + count_letter_in_string(c, typedIn));
+        });
+        setLetterNums(new_letters);
+        cancelInput();
+    }
+
+    /**
      * Chooses random letters based on the user's input
      */
     const chooseRandomly = () => {
@@ -495,12 +507,14 @@ export default function LetterInput(props: LetterInputProps){
             resetLetters();
         }
         else {
-            confirmDialog({
-                message: <span style={props.mobile ? {position : "relative", top: "5px"} : undefined}>Are you sure you want to reset the board?</span>,
-                header: "Reset?",
-                icon: "pi pi-exclamation-triangle",
-                accept: props.clearResults
-            });
+            if (props.appState?.last_game?.board != null) {
+                confirmDialog({
+                    message: <span style={props.mobile ? {position : "relative", top: "5px"} : undefined}>Are you sure you want to reset the board?</span>,
+                    header: "Reset?",
+                    icon: "pi pi-exclamation-triangle",
+                    accept: props.clearResults
+                });
+            }
         }
     }
 
@@ -567,9 +581,10 @@ export default function LetterInput(props: LetterInputProps){
         setLetterNums(new_map);
     }
     
+    const no_letters = (Array.from(letterNums.values()).reduce((prev, cur) => (prev ?? 0) + (cur ?? 0)) ?? 0) === 0;
+
     return (
         <>
-        <ConfirmDialog/>
         <ContextMenu model={items} ref={cm}/>
         <ContextMenu model={type_in_items} ref={type_in_cm}/>
         <ContextMenu model={random_num_items} ref={random_num_cm}/>
@@ -577,12 +592,32 @@ export default function LetterInput(props: LetterInputProps){
         <Dialog header="Input letters" visible={typeInVisible} onHide={() => setTypeInVisible(false)}>
             <TabView>
                 <TabPanel header="Type in letters">
+                    {no_letters ?
                     <form onSubmit={e => {e.preventDefault(); useLetters()}} autoComplete="off">
-                        <InputText value={typedIn} onChange={e => setTypedIn(e.target.value.toUpperCase())} keyfilter="alpha" id="typeIn" onContextMenu={e => type_in_cm.current?.show(e)}/>
-                        <br/>
-                        <Button type="submit" label="Use letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
-                        <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => cancelInput()}/>
+                        <InputText value={typedIn} onChange={e => setTypedIn(e.target.value.toUpperCase())} keyfilter="alpha" id="typeIn" onContextMenu={e => type_in_cm.current?.show(e)} style={{width: "100%"}}/>
+                        <div style={{marginTop: "5px", textAlign: "center"}}>
+                            <Button type="submit" label="Use letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
+                            <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={cancelInput}/>
+                        </div>
                     </form>
+                    :
+                    <div>
+                        <InputText value={typedIn} onChange={e => setTypedIn(e.target.value.toUpperCase())} keyfilter="alpha" id="typeIn" onContextMenu={e => type_in_cm.current?.show(e)} style={{width: "100%"}}/>
+                        <div style={{marginTop: "5px", textAlign: "center"}}>
+                            {props.mobile ? 
+                            <div style={{display: "grid", rowGap: "5px", marginTop: "10px"}}>
+                                <Button label="Replace letters" icon="pi pi-arrow-right" iconPos="right" onClick={useLetters}/>
+                                <Button label="Add letters" icon="pi pi-plus" iconPos="right" onClick={addLetters}/>
+                                <Button label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={cancelInput}/>
+                            </div>
+                            :
+                            <>
+                            <Button label="Replace letters" icon="pi pi-arrow-right" iconPos="right" onClick={useLetters}/>
+                            <Button label="Add letters" icon="pi pi-plus" iconPos="right" style={{marginLeft: "5px", marginRight: "5px"}} onClick={addLetters}/>
+                            <Button label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={cancelInput}/>
+                            </>}
+                        </div>
+                    </div>}
                 </TabPanel>
                 <TabPanel header="Choose randomly">
                     <form onSubmit={e=> {e.preventDefault(); chooseRandomly()}} autoComplete="off">
@@ -594,8 +629,10 @@ export default function LetterInput(props: LetterInputProps){
                         {randomFrom === "standard Bananagrams" ? <div style={{display: "flex", justifyContent: "center", marginTop: "5px", marginBottom: "5px"}}><small>144 max</small><br/></div>
                         : randomFrom === "double Bananagrams" ? <div style={{display: "flex", justifyContent: "center", marginTop: "5px", marginBottom: "5px"}}><small>288 max</small><br/></div>
                         : null}
-                        <Button type="submit" label="Choose letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
-                        <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => cancelInput()}/>
+                        <div style={{textAlign: "center"}}>
+                            <Button type="submit" label="Choose letters" icon="pi pi-arrow-right" iconPos="right" style={{marginTop: "5px", marginRight: "5px"}}/>
+                            <Button type="reset" label="Cancel" icon="pi pi-times" iconPos="right" severity="secondary" onClick={() => cancelInput()}/>
+                        </div>
                     </form>
                 </TabPanel>
             </TabView>            

@@ -14,6 +14,7 @@ import PlayableWords from "./playable_words";
 import Settings from "./settings";
 import { AppState, GameState, result_t } from "./types";
 import init, { js_board_to_vec } from "../bg-solver/pkg/bg_solver";
+import { ConfirmDialog } from "primereact/confirmdialog";
 
 
 export default function App() {
@@ -260,25 +261,24 @@ export default function App() {
         setWorker(new Worker(new URL("solver", import.meta.url), {type: "module"}));
     }
 
-    if (dimensions.width < 800) {
+    if (dimensions.width < 730) {
         return (
             <>
             <Toast ref={toast}/>
+            <ConfirmDialog/>
             <PlayableWords playableWords={playableWords} visible={playableWordsVisible} setVisible={setPlayableWordsVisible} mobile/>
             <Dialog header="Solution" visible={solutionVisible} onHide={() => setSolutionVisible(false)} maximized>
                 <ResultsDisplay toast={toast} results={results} contextMenu={resultsContextMenu} clearResults={clearResults} running={running} panelWidth={100} mobile/>
             </Dialog>
-            <ScrollPanel style={{ width: "100%", height: "100%" }}>
-                <div style={{width: "100%", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center"}}>
-                    <div style={{display: "grid", justifyContent:"center", alignItems: "center", width: "100%"}}>
-                        <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
-                                     contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
-                                     clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
-                        <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}} disabled={appState?.last_game == null}/>
-                        <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
-                    </div>
-                </div>
-            </ScrollPanel>
+            <div style={{height: "95vh", display: "flex", alignItems: "center"}}>
+            <div style={{display: "grid", justifyContent: "grid", alignItems: "center"}}>
+                <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
+                                contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
+                                clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
+                <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}} disabled={appState?.last_game == null}/>
+                <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
+            </div>
+            </div>
             </>
         )
     }
@@ -286,6 +286,7 @@ export default function App() {
         return (
             <>
             <Toast ref={toast}/>
+            <ConfirmDialog/>
             <PlayableWords playableWords={playableWords} visible={playableWordsVisible} setVisible={setPlayableWordsVisible}/>
             <Splitter style={{height: "98vh"}} onResizeEnd={e => setPanelSizes(e.sizes as [number, number])}>
                 <SplitterPanel size={panelSizes[0]} pt={{root: {onContextMenu: e => setLetterInputContextMenu(e)}}} minSize={20}>

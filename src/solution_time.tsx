@@ -36,7 +36,7 @@ export default function SolutionTime(props: SolutionTimeProps) {
         }
     }
     return (
-        <span style={{position: "fixed", bottom: "3vh", right: "3vw", left: props.mobile ? "3vw" : undefined}}>
+        <span style={{position: "fixed", bottom: "3vh", right: "3vw", fontSize: "smaller", left: props.mobile ? "3vw" : undefined}}>
             Completed in <span style={{color: color}}>{prettyMilliseconds(props.time)}</span>
             &nbsp;({prettyMilliseconds(props.time/props.num_letters, {formatSubMilliseconds: true, compact: true})}/letter)
             with {props.density.toFixed(2)} letter{props.density.toFixed(2) === "1.00" ? "" : "s"} per square

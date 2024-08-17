@@ -1,6 +1,11 @@
 body {
   font-family: sans-serif;
-  overflow-y: hidden;
+}
+
+@media screen and (min-width: 800px) {
+  body {
+    overflow-y: hidden;
+  }
 }
 
 #results-table {
