@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, MouseEvent, RefObject } from "react";
+import { useEffect, useRef, useState, MouseEvent, RefObject, CSSProperties } from "react";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { ContextMenu } from "primereact/contextmenu";
 import { MenuItem } from "primereact/menuitem";
@@ -33,7 +33,11 @@ interface ResultsDisplayProps {
     /**
      * The width of the containing panel in percent
      */
-    panelWidth: number|null
+    panelWidth: number|null,
+    /**
+     * Whether to format for a mobile display
+     */
+    mobile?: boolean
 }
 
 /**
@@ -73,6 +77,7 @@ export function useWindowDimensions() {
  * @component
  */
 export default function ResultsDisplay(props: ResultsDisplayProps) {
+    const [styleOverwrite, setStyleOverwrite] = useState<CSSProperties>({});
     const cm = useRef<ContextMenu|null>(null);
     const { height, width } = useWindowDimensions();
 
@@ -167,9 +172,15 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
         if (results_table != null) {
             let n = 115;
             results_table.style.fontSize = n + "%";
-            while (n >= 1 && (results_table.offsetHeight > height*0.9 || (props.panelWidth != null && (results_table.offsetWidth > 0.9*width*(props.panelWidth/100))))) {
+            while (n > 15 && (results_table.offsetHeight > height*0.9 || (props.panelWidth != null && (results_table.offsetWidth > 0.9*width*(props.panelWidth/100))))) {
                 n -= 1;
                 results_table.style.fontSize = n + "%";
+            }
+            if (n <= 20) {
+                setStyleOverwrite({padding: "2px"});
+            }
+            else {
+                setStyleOverwrite({});
             }
         }
     }, [props.results, props.panelWidth, height, width]);
@@ -199,13 +210,13 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
                                 <tr key={"row-"+i} className="results-tr">
                                     {row.map((val, j) => {
                                         if (val.trim() === "") {
-                                            return <td key={"row-"+i+"-cell-"+j} className="emptyCell"></td>
+                                            return <td key={"row-"+i+"-cell-"+j} className="emptyCell" style={styleOverwrite}></td>
                                         }
                                         else if (val.length === 2) {
-                                            return <td key={"row-"+i+"-cell-"+j} className="previouslyPlayedCell" aria-label={`Row ${i}, column ${j}: ${val.charAt(0)} (previously played)`}>{val.charAt(0)}</td>
+                                            return <td key={"row-"+i+"-cell-"+j} className="previouslyPlayedCell" style={styleOverwrite} aria-label={`Row ${i}, column ${j}: ${val.charAt(0)} (previously played)`}>{val.charAt(0)}</td>
                                         }
                                         else {
-                                            return <td key={"row-"+i+"-cell-"+j} className="occupiedCell" aria-label={`Row ${i}, column ${j}: ${val}`}>{val}</td>
+                                            return <td key={"row-"+i+"-cell-"+j} className="occupiedCell" style={styleOverwrite} aria-label={`Row ${i}, column ${j}: ${val}`}>{val}</td>
                                         }
                                     })}
                                 </tr>
@@ -215,7 +226,7 @@ export default function ResultsDisplay(props: ResultsDisplayProps) {
                 </table>
             </TransformComponent>
         </TransformWrapper>
-        <SolutionTime time={props.results.elapsed} num_letters={num_letters} density={density}/>
+        <SolutionTime time={props.results.elapsed} num_letters={num_letters} density={density} mobile={props.mobile}/>
         </>
         }
         </>

@@ -23,7 +23,7 @@ interface SettingsProps {
      */
     toast: RefObject<Toast>,
     /**
-     * Whether to format for mobile display
+     * Whether to format for a mobile display
      */
     mobile?: boolean
 }

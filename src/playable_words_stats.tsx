@@ -75,7 +75,7 @@ interface PlayableWordsStatsProps {
      */
     type: string,
     /**
-     * Whether this is for a mobile display
+     * Whether to format for a mobile display
      */
     mobile?: boolean
 }

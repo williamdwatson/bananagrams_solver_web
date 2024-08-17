@@ -75,7 +75,7 @@ interface LetterInputProps {
      */
     cancel: () => void,
     /**
-     * Whether this is for a mobile device
+     * Whether to format for a mobile display
      */
     mobile?: boolean
 }

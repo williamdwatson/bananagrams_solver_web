@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, MouseEvent } from "react";
 import "primereact/resources/themes/tailwind-light/theme.css";
 import "primereact/resources/primereact.min.css";
 import 'primeicons/primeicons.css';
+import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
 import { ScrollPanel } from "primereact/scrollpanel";
 import { Splitter, SplitterPanel } from "primereact/splitter";
 import { Toast } from "primereact/toast";
@@ -9,12 +11,10 @@ import "./App.css";
 import LetterInput from "./letter_input";
 import ResultsDisplay, { useWindowDimensions } from "./results_display";
 import PlayableWords from "./playable_words";
-import { AppState, GameState } from "./types";
-import { result_t } from "./types";
-import init, { js_board_to_vec } from "../bg-solver/pkg/bg_solver";
 import Settings from "./settings";
-import { Button } from "primereact/button";
-import { Dropdown } from "primereact/dropdown";
+import { AppState, GameState, result_t } from "./types";
+import init, { js_board_to_vec } from "../bg-solver/pkg/bg_solver";
+
 
 export default function App() {
     const toast = useRef<Toast>(null);
@@ -31,6 +31,7 @@ export default function App() {
     const [undoPossible, setUndoPossible] = useState(false);
     const [redoPossible, setRedoPossible] = useState(false);
     const [canPlay, setCanPlay] = useState(false);
+    const [solutionVisible, setSolutionVisible] = useState(false);
     const [worker, setWorker] = useState<Worker>(new Worker(new URL("solver", import.meta.url), {type: "module"}));
     const dimensions = useWindowDimensions();
 
@@ -171,7 +172,7 @@ export default function App() {
                 setAppState({
                     last_game: null,
                     undo_stack: [...appState!.undo_stack, null],
-                    redo_stack: appState!.redo_stack.slice(0, -1),
+                    redo_stack: appState!.redo_stack,                           // No need to slice since we popped above
                     maximum_words_to_check: appState!.maximum_words_to_check,
                     filter_letters_on_board: appState!.filter_letters_on_board,
                     use_long_dictionary: appState!.use_long_dictionary
@@ -183,7 +184,7 @@ export default function App() {
                 setAppState({
                     last_game: prev_game_state,
                     undo_stack: [...appState!.undo_stack, appState!.last_game],
-                    redo_stack: appState!.redo_stack.slice(0, -1),
+                    redo_stack: appState!.redo_stack,
                     maximum_words_to_check: appState!.maximum_words_to_check,
                     filter_letters_on_board: appState!.filter_letters_on_board,
                     use_long_dictionary: appState!.use_long_dictionary
@@ -221,7 +222,7 @@ export default function App() {
             if (prev_game_state == null) {
                 setAppState({
                     last_game: null,
-                    undo_stack: appState!.undo_stack.slice(0, -1),
+                    undo_stack: appState!.undo_stack,
                     redo_stack: [...appState!.redo_stack, appState!.last_game],
                     maximum_words_to_check: appState!.maximum_words_to_check,
                     filter_letters_on_board: appState!.filter_letters_on_board,
@@ -233,7 +234,7 @@ export default function App() {
             else {
                 setAppState({
                     last_game: prev_game_state,
-                    undo_stack: appState!.undo_stack.slice(0, -1),
+                    undo_stack: appState!.undo_stack,
                     redo_stack: [...appState!.redo_stack, appState!.last_game],
                     maximum_words_to_check: appState!.maximum_words_to_check,
                     filter_letters_on_board: appState!.filter_letters_on_board,
@@ -264,13 +265,16 @@ export default function App() {
             <>
             <Toast ref={toast}/>
             <PlayableWords playableWords={playableWords} visible={playableWordsVisible} setVisible={setPlayableWordsVisible} mobile/>
+            <Dialog header="Solution" visible={solutionVisible} onHide={() => setSolutionVisible(false)} maximized>
+                <ResultsDisplay toast={toast} results={results} contextMenu={resultsContextMenu} clearResults={clearResults} running={running} panelWidth={100} mobile/>
+            </Dialog>
             <ScrollPanel style={{ width: "100%", height: "100%" }}>
                 <div style={{width: "100%", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center"}}>
                     <div style={{display: "grid", justifyContent:"center", alignItems: "center", width: "100%"}}>
                         <LetterInput appState={appState} toast={toast} startRunning={startRunning} running={running} canPlay={canPlay} cancel={cancelRun}
                                      contextMenu={letterInputContextMenu} setPlayableWords={setPlayableWords} setPlayableWordsVisible={setPlayableWordsVisible}
                                      clearResults={clearResults} undo={undo} redo={redo} undoPossible={undoPossible} redoPossible={redoPossible} mobile/>
-                        <Button label="View results" severity="success" style={{marginTop: "3vh"}}/>
+                        <Button label="View results" severity="success" onClick={() => setSolutionVisible(true)} style={{marginTop: "3vh"}}/>
                         <Settings toast={toast} appState={appState} setAppState={setAppState} mobile/>
                     </div>
                 </div>
