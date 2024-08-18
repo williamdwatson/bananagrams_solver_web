@@ -222,7 +222,6 @@ impl Board {
                 if row_idx + word.len() > BOARD_SIZE {
                     return (false, played_indices, remaining_letters, LetterUsage::Remaining);
                 }
-
                 // Check if the word will start or end at a letter, or borders one left or right
                 let borders_start = self.get_val(row_idx, col_idx) != EMPTY_VALUE;
                 let borders_end = self.get_val(row_idx+word.len()-1, col_idx) != EMPTY_VALUE;
@@ -1565,7 +1564,7 @@ pub fn play_from_scratch(letters_array: &[u8], use_long_dictionary: bool, filter
             board.set_val(row, col, EMPTY_VALUE);
         }
     }
-    return JsValue::from_str("No solution found - dump and try again!");
+    JsValue::from_str("No solution found - dump and try again!")
 }
 
 ///Gets playable words

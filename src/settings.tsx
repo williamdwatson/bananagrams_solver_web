@@ -88,9 +88,9 @@ export default function Settings(props: SettingsProps) {
     }
 
     const about_filter_letters_on_board = <>
-    <p>The maximum number of letters on the board that can be used in conjuction with letters in the hand when filtering playable words</p>
-                    <p><strong>Lower values:</strong> <em>Usually</em> faster solutions</p>
-                    <p><strong>Higher values:</strong> <em>Usually</em> slower solutions, but more likely to find a solution if one exists. For an exhaustive search, use a value greater than the total number of letters.</p>
+        <p>The maximum number of letters on the board that can be used in conjuction with letters in the hand when filtering playable words</p>
+        <p><strong>Lower values:</strong> <em>Usually</em> faster solutions</p>
+        <p><strong>Higher values:</strong> <em>Usually</em> slower solutions, but more likely to find a solution if one exists. For an exhaustive search, use a value greater than the total number of letters.</p>
     </>
 
     return (
