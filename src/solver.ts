@@ -55,7 +55,7 @@ export async function get_random_letters(what: "infinite set"|"standard Bananagr
             }
             for (let i=0; i<how_many; i++) {
                 const random_num = getRandomInt(0, to_choose_from.length-1);
-                const random_char = to_choose_from[random_num];
+                const random_char = to_choose_from.splice(random_num, 1)[0];
                 if (return_chars.has(random_char)) {
                     return_chars.set(random_char, return_chars.get(random_char)!+1);
                 }
@@ -63,23 +63,22 @@ export async function get_random_letters(what: "infinite set"|"standard Bananagr
                     reject("Missing value in return dictionary: " + random_char);
                     return;
                 }
-                to_choose_from.splice(random_num, 1);
             }
         }
         else if (what === "double Bananagrams") {
             if (how_many > 288) {
-                reject("The number to choose msut be less than 288 for double Bananagrams");
+                reject("The number to choose must be less than 288 for double Bananagrams");
                 return;
             }
             const to_choose_from = [];
             for (let i=0; i<UPPERCASE.length; i++) {
                 for (let j=0; j<REGULAR_TILES[i]; j++) {
-                    to_choose_from.push(UPPERCASE.charAt(i));
+                    to_choose_from.push(UPPERCASE.charAt(i), UPPERCASE.charAt(i));
                 }
             }
             for (let i=0; i<how_many; i++) {
                 const random_num = getRandomInt(0, to_choose_from.length-1);
-                const random_char = to_choose_from[random_num];
+                const random_char = to_choose_from.splice(random_num, 1)[0];
                 if (return_chars.has(random_char)) {
                     return_chars.set(random_char, return_chars.get(random_char)!+1);
                 }
@@ -87,7 +86,6 @@ export async function get_random_letters(what: "infinite set"|"standard Bananagr
                     reject("Missing value in return dictionary: " + random_char);
                     return;
                 }
-                to_choose_from.splice(random_num, 1);
             }
         }
         else {
